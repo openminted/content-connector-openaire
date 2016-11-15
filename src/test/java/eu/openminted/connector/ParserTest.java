@@ -2,13 +2,14 @@ package eu.openminted.connector;
 
 import org.junit.Test;
 
+import java.util.List;
+
 public class ParserTest {
     @Test
-    public void executeTest() {
+    public void getPublicationsTest() {
         Parser parser = new Parser();
-        String url = "http://api.openaire.eu/search/publications?size=5";
-        int items = parser.execute(url);
-
-        assert (items == 5);
+        String url = "http://api.openaire.eu/search/publications?size=1";
+        List<String> publications = parser.getPublications(url);
+        assert (publications.size() == 1);
     }
 }
