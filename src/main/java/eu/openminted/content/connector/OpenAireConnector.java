@@ -19,12 +19,18 @@ public class OpenAireConnector implements ContentConnector {
 
             example 2:
             http://api.openaire.eu/search/publications?openairePublicationID=od______2806::3596cc1b1e96409b1677a0efe085912d,od______2806::36a266a2402a9214e8dda6dd9e68a3eb
+
+            example 3:
+            http://api.openaire.eu/search/publications?title=АНАЛИЗ ВКЛАДНЫХ ОПЕРАЦИЙ КОММЕРЧЕСКОГО БАНКА
          */
-        String address = "http://api.openaire.eu/search/publications";
+        String address = "http://api.openaire.eu/search/publications?";
         SearchResult searchResult = new SearchResult();
 
+        if (query.getKeyword() != null){
+            address += "title=" + query.getKeyword().replaceAll(" ", "%20") + "&";
+        }
+
         if (query.getParams() != null) {
-            address += "?";
             for (String parameter : query.getParams().keySet()) {
                 String parameters = parameter + "=";
                 for (String value : query.getParams().get(parameter)) {
@@ -34,6 +40,7 @@ public class OpenAireConnector implements ContentConnector {
                 address += parameters;
             }
         }
+
         address = address.replaceAll("&$", "");
         searchResult.setPublications(Parser.getPublications(address));
         return searchResult;

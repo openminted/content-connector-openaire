@@ -15,14 +15,16 @@ public class OpenAireConnectorTest {
         parameters.get("openairePublicationID").add("od______2806::3596cc1b1e96409b1677a0efe085912d");
         parameters.get("openairePublicationID").add("od______2806::36a266a2402a9214e8dda6dd9e68a3eb");
 
-        query.setParams(parameters);
-        query.setFrom(1); //fromDateAccepted
-        query.setTo(2); //toDateAccepted
-        query.setKeyword("keyword");//title
-
+//        query.setParams(parameters);
+//        query.setFrom(1); //fromDateAccepted
+//        query.setTo(2); //toDateAccepted
+//        query.setKeyword("АНАЛИЗ ВКЛАДНЫХ ОПЕРАЦИЙ КОММЕРЧЕСКОГО БАНКА");//title
+        query.setKeyword("");
         OpenAireConnector openAireConnector = new OpenAireConnector();
         SearchResult searchResult = openAireConnector.search(query);
-        assert searchResult.getPublications().size() == 2;
+        System.out.println(searchResult.getPublications().size());
+        assert searchResult.getPublications().size() == 1;
+
     }
 
     @Test
