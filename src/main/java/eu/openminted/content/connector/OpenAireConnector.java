@@ -2,6 +2,7 @@ package eu.openminted.content.connector;
 
 import eu.openminted.registry.domain.DocumentMetadataRecord;
 import org.hsqldb.lib.StringInputStream;
+import org.springframework.stereotype.Component;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -9,6 +10,7 @@ import javax.xml.bind.Marshaller;
 import java.io.*;
 import java.util.List;
 
+@Component
 public class OpenAireConnector implements ContentConnector {
     @Override
     public SearchResult search(Query query) {
