@@ -1,4 +1,4 @@
-package eu.openminted.openaire;
+package eu.openminted.content.openaire;
 
 import eu.openminted.registry.domain.*;
 import org.xml.sax.Attributes;
@@ -33,7 +33,7 @@ public class PublicationResultHandler extends DefaultHandler {
     private boolean hasKeyword = false;
     private boolean hasSubject = false;
     private boolean hasAbstract = false;
-    private List<String> OMTDPublications;
+    private List<DocumentMetadataRecord> OMTDPublications;
     private Marshaller jaxbMarshaller;
 
     public PublicationResultHandler() throws JAXBException {
@@ -215,14 +215,7 @@ public class PublicationResultHandler extends DefaultHandler {
             For the time being it prints the xml as a string
          */
         if (qName.equalsIgnoreCase("result")) {
-            try {
-                StringWriter sw = new StringWriter();
-                jaxbMarshaller.marshal(documentMetadataRecord, sw);
-                OMTDPublications.add(sw.toString());
-            }
-            catch (JAXBException e) {
-                e.printStackTrace();
-            }
+            OMTDPublications.add(documentMetadataRecord);
         }
         /*
             MetadataInfo
@@ -438,7 +431,7 @@ public class PublicationResultHandler extends DefaultHandler {
         }
     }
 
-    public List<String> getOMTDPublications() {
+    public List<DocumentMetadataRecord> getOMTDPublications() {
         return OMTDPublications;
     }
 }

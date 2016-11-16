@@ -1,4 +1,4 @@
-package eu.openminted.openaire;
+package eu.openminted.content.openaire;
 
 import javax.xml.bind.annotation.XmlEnum;
 import javax.xml.bind.annotation.XmlEnumValue;

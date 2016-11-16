@@ -1,6 +1,7 @@
-package eu.openminted.connector;
+package eu.openminted.content.connector;
 
-import eu.openminted.openaire.PublicationResultHandler;
+import eu.openminted.content.openaire.PublicationResultHandler;
+import eu.openminted.registry.domain.DocumentMetadataRecord;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -18,7 +19,7 @@ class Parser {
      * @param address the URL to the OpenAire search API
      * @return the number of documents processed
      */
-    List<String> getPublications(String address) {
+    static List<DocumentMetadataRecord> getPublications(String address) {
         try {
             URL url = new URL(address);
             SAXParserFactory factory = SAXParserFactory.newInstance();
