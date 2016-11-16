@@ -1,21 +1,12 @@
 package eu.openminted.content.connector;
 
-import eu.openminted.content.openaire.PublicationResultHandler;
 import eu.openminted.registry.domain.DocumentMetadataRecord;
 import org.hsqldb.lib.StringInputStream;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
 import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.file.Files;
 import java.util.List;
 
 public class OpenAireConnector implements ContentConnector {
