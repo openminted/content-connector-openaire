@@ -71,4 +71,9 @@ public class OpenAireConnector implements ContentConnector {
 
         return null;
     }
+
+    @Override
+    public String getSourceName() {
+        return "OpenAIRE";
+    }
 }
