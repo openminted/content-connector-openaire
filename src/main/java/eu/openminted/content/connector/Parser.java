@@ -14,24 +14,54 @@ import java.net.URL;
 import java.util.List;
 
 class Parser {
-    /***
-     * Reads the URL address to parse the publications retrieved from the OpenAire search API
-     * @param address the URL to the OpenAire search API
-     * @return the number of documents processed
-     */
-    static List<DocumentMetadataRecord> getPublications(String address) {
+
+    private Parser() {}
+
+    private static Parser parser;
+    private PublicationResultHandler handler;
+//    private List<DocumentMetadataRecord> OMTDPublications;
+//    private int to;
+//    private int from;
+//    private int totalHits;
+
+    public static Parser initialize(String address) {
+        parser = new Parser();
         try {
             URL url = new URL(address);
             SAXParserFactory factory = SAXParserFactory.newInstance();
             SAXParser saxParser = factory.newSAXParser();
-            PublicationResultHandler handler = new PublicationResultHandler();
-            saxParser.parse(new InputSource(url.openStream()), handler);
-
-            return handler.getOMTDPublications();
+            parser.handler = new PublicationResultHandler();
+            saxParser.parse(new InputSource(url.openStream()), parser.handler);
+            return parser;
         } catch (ParserConfigurationException | SAXException | IOException | JAXBException e) {
             e.printStackTrace();
         }
-
         return null;
+    }
+
+    public List<DocumentMetadataRecord> getOMTDPublications() {
+        return handler.getOMTDPublications();
+    }
+
+    public int getFrom() {
+        if (handler.getTotal() > handler.getSize()) {
+            return handler.getSize() * handler.getPage() - handler.getSize();
+        }
+        else {
+            return 0;
+        }
+    }
+
+    public int getTo() {
+        if (handler.getTotal() > handler.getSize()) {
+            return handler.getSize() * handler.getPage();
+        }
+        else {
+            return handler.getTotal();
+        }
+    }
+
+    public int getTotalHits() {
+        return handler.getTotal();
     }
 }

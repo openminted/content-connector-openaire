@@ -12,6 +12,7 @@ import java.util.List;
 
 @Component
 public class OpenAireConnector implements ContentConnector {
+
     @Override
     public SearchResult search(Query query) {
 
@@ -24,6 +25,9 @@ public class OpenAireConnector implements ContentConnector {
 
             example 3:
             http://api.openaire.eu/search/publications?title=АНАЛИЗ ВКЛАДНЫХ ОПЕРАЦИЙ КОММЕРЧЕСКОГО БАНКА
+
+            example 4:
+            http://api.openaire.eu/search/publications?title=АНАЛИЗ%20ВКЛАДНЫХ%20ОПЕРАЦИЙ%20КОММЕРЧЕСКОГО%20БАНКА&openairePublicationID=od______2806::3596cc1b1e96409b1677a0efe085912d,od______2806::36a266a2402a9214e8dda6dd9e68a3eb
          */
         String address = "http://api.openaire.eu/search/publications?";
         SearchResult searchResult = new SearchResult();
@@ -44,7 +48,13 @@ public class OpenAireConnector implements ContentConnector {
         }
 
         address = address.replaceAll("&$", "");
-        searchResult.setPublications(Parser.getPublications(address));
+
+
+        Parser parser = Parser.initialize(address);
+        searchResult.setPublications(parser.getOMTDPublications());
+        searchResult.setTo(parser.getTo());
+        searchResult.setFrom(parser.getFrom());
+        searchResult.setTotalHits(parser.getTotalHits());
         return searchResult;
     }
 
@@ -56,7 +66,9 @@ public class OpenAireConnector implements ContentConnector {
             Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
             jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
             StringBuilder stringBuilder = new StringBuilder();
-            List<DocumentMetadataRecord> publications = Parser.getPublications(address);
+
+            Parser parser = Parser.initialize(address);
+            List<DocumentMetadataRecord> publications = parser.getOMTDPublications();
 
             if (publications != null) {
                 for (DocumentMetadataRecord documentMetadataRecord : publications) {

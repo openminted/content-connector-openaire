@@ -8,9 +8,9 @@ import java.util.List;
 public class ParserTest {
     @Test
     public void getPublicationsTest() {
-        Parser parser = new Parser();
         String url = "http://api.openaire.eu/search/publications?size=1";
-        List<DocumentMetadataRecord> publications = parser.getPublications(url);
+        Parser parser = Parser.initialize(url);
+        List<DocumentMetadataRecord> publications = parser.getOMTDPublications();
         assert (publications.size() == 1);
     }
 }

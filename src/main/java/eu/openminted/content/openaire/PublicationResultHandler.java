@@ -28,13 +28,20 @@ public class PublicationResultHandler extends DefaultHandler {
     private DocumentDistributionInfo documentDistributionInfo;
     private String description = "";
     private String value = "";
+    private boolean hasResults = false;
     private boolean hasAuthor = false;
     private boolean hasRelation = false;
     private boolean hasKeyword = false;
     private boolean hasSubject = false;
     private boolean hasAbstract = false;
-    private List<DocumentMetadataRecord> OMTDPublications;
     private Marshaller jaxbMarshaller;
+
+
+
+    private List<DocumentMetadataRecord> OMTDPublications;
+    private int size;
+    private int page;
+    private int total;
 
     public PublicationResultHandler() throws JAXBException {
         OMTDPublications = new ArrayList<>();
@@ -45,10 +52,17 @@ public class PublicationResultHandler extends DefaultHandler {
 
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+
+        /*
+            End of query metadata section
+         */
+        if (qName.equalsIgnoreCase("results")) {
+            hasResults = true;
+        }
         /*
             DocumentMetadataRecord
          */
-        if (qName.equalsIgnoreCase("result")) {
+        else if (qName.equalsIgnoreCase("result")) {
             documentMetadataRecord = new DocumentMetadataRecord();
             Document document = new Document();
             publication = new DocumentInfo();
@@ -418,6 +432,25 @@ public class PublicationResultHandler extends DefaultHandler {
                 publication.getContributors().add(contributor);
             }
         }
+
+        else if (qName.equalsIgnoreCase("size")) {
+            if (!hasResults) {
+                size = Integer.parseInt(value);
+            }
+        }
+        else if (qName.equalsIgnoreCase("page")) {
+            if (!hasResults) {
+                page = Integer.parseInt(value);
+            }
+        }
+        else if (qName.equalsIgnoreCase("total")) {
+            if (!hasResults) {
+                total = Integer.parseInt(value);
+            }
+        }
+        else if (qName.equalsIgnoreCase("results")) {
+            hasResults = false;
+        }
     }
 
     @Override
@@ -433,5 +466,17 @@ public class PublicationResultHandler extends DefaultHandler {
 
     public List<DocumentMetadataRecord> getOMTDPublications() {
         return OMTDPublications;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public int getPage() {
+        return page;
+    }
+
+    public int getTotal() {
+        return total;
     }
 }

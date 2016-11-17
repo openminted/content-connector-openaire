@@ -1,5 +1,6 @@
 package eu.openminted.content.connector;
 
+import eu.openminted.registry.domain.Facet;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 
@@ -13,17 +14,26 @@ public class OpenAireConnectorTest {
         Map<String, List<String>> parameters = new HashMap<>();
         parameters.put("openairePublicationID", new ArrayList<>());
         parameters.get("openairePublicationID").add("od______2806::3596cc1b1e96409b1677a0efe085912d");
+        parameters.get("openairePublicationID").add("od______2806::3695906b0423d41e074bb46a9bdf9cb9");
         parameters.get("openairePublicationID").add("od______2806::36a266a2402a9214e8dda6dd9e68a3eb");
+        parameters.put("page", new ArrayList<>());
+        parameters.get("page").add("2");
+        parameters.put("size", new ArrayList<>());
+        parameters.get("size").add("1");
 
-//        query.setParams(parameters);
-//        query.setFrom(1); //fromDateAccepted
-//        query.setTo(2); //toDateAccepted
-//        query.setKeyword("АНАЛИЗ ВКЛАДНЫХ ОПЕРАЦИЙ КОММЕРЧЕСКОГО БАНКА");//title
-        query.setKeyword("");
+        query.setParams(parameters);
+        query.setFrom(1);
+        query.setTo(2);
+//        query.setKeyword("АНАЛИЗ ВКЛАДНЫХ ОПЕРАЦИЙ КОММЕРЧЕСКОГО БАНКА");
+
         OpenAireConnector openAireConnector = new OpenAireConnector();
         SearchResult searchResult = openAireConnector.search(query);
         System.out.println(searchResult.getPublications().size());
-        assert searchResult.getPublications().size() == 1;
+
+        System.out.println(searchResult.getFrom());
+        System.out.println(searchResult.getTo());
+        System.out.println(searchResult.getTotalHits());
+//        assert searchResult.getPublications().size() == 1;
 
     }
 
