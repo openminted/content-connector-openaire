@@ -1,6 +1,7 @@
 package eu.openminted.content.connector;
 
 import eu.openminted.registry.domain.DocumentMetadataRecord;
+import org.apache.log4j.Logger;
 import org.hsqldb.lib.StringInputStream;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,7 @@ import java.util.List;
 
 @Component
 public class OpenAireConnector implements ContentConnector {
+    private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
 
     @Override
     public SearchResult search(Query query) {
@@ -32,7 +34,7 @@ public class OpenAireConnector implements ContentConnector {
         String address = "http://api.openaire.eu/search/publications?";
         SearchResult searchResult = new SearchResult();
 
-        if (query.getKeyword() != null){
+        if (query.getKeyword() != null) {
             address += "title=" + query.getKeyword().replaceAll(" ", "%20") + "&";
         }
 
@@ -47,14 +49,23 @@ public class OpenAireConnector implements ContentConnector {
             }
         }
 
-        address = address.replaceAll("&$", "");
+        int size = query.getTo() - query.getFrom();
+        if (query.getTo() % size == 0) {
+            int page = query.getTo() / size;
+            address += "page=" + page + "&size=" + size + "&";
+        }
+        else {
+            log.error("`from` and `to` keywords should be meaningful for creating a page with a specific size for your data representation");
+        }
 
+        address = address.replaceAll("&$", "");
 
         Parser parser = Parser.initialize(address);
         searchResult.setPublications(parser.getOMTDPublications());
         searchResult.setTo(parser.getTo());
         searchResult.setFrom(parser.getFrom());
         searchResult.setTotalHits(parser.getTotalHits());
+
         return searchResult;
     }
 

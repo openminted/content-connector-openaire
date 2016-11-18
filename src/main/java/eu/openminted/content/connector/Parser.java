@@ -13,16 +13,12 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
-class Parser {
+public class Parser {
 
     private Parser() {}
 
     private static Parser parser;
     private PublicationResultHandler handler;
-//    private List<DocumentMetadataRecord> OMTDPublications;
-//    private int to;
-//    private int from;
-//    private int totalHits;
 
     public static Parser initialize(String address) {
         parser = new Parser();
