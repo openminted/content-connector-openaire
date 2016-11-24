@@ -1,6 +1,8 @@
 package eu.openminted.content.openaire;
 
+import eu.openminted.content.connector.OpenAireConnector;
 import eu.openminted.registry.domain.*;
+import org.apache.log4j.Logger;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -19,6 +21,8 @@ import java.util.GregorianCalendar;
 import java.util.List;
 
 public class PublicationResultHandler extends DefaultHandler {
+    private static Logger log = Logger.getLogger(PublicationResultHandler.class.getName());
+
     private DocumentMetadataRecord documentMetadataRecord;
     private DocumentInfo publication;
     private MetadataHeaderInfo metadataHeaderInfo;
@@ -38,7 +42,7 @@ public class PublicationResultHandler extends DefaultHandler {
 
 
 
-    private List<DocumentMetadataRecord> OMTDPublications;
+    private List<String> OMTDPublications;
     private int size;
     private int page;
     private int total;
@@ -131,11 +135,14 @@ public class PublicationResultHandler extends DefaultHandler {
                 }
             }
             publication.setPublicationType(publicationTypeEnum);
-        } else if (qName.equalsIgnoreCase("collectedfrom")) {
+        }
+        /*
+            collectedfrom
+         */
+        else if (qName.equalsIgnoreCase("collectedfrom")) {
             String id = attributes.getValue("id");
             publicationIdentifier = new PublicationIdentifier();
             publicationIdentifier.setValue(id);
-
         }
         /*
             PublicationIdentifierSchemeName & schemeURI (if necessary)
@@ -166,15 +173,26 @@ public class PublicationResultHandler extends DefaultHandler {
         }
         /*
             DocumentLanguage
-            OpenAire is using a 3 letters coding for the language id, though OMTD is using a 2 letters one.
-            TODO: Convert OpenAire language coding to OMTD coding
+            OpenAire is using different language coding from OMTD
          */
         else if (qName.equalsIgnoreCase("language")) {
             String classid = attributes.getValue("classid");
             String classname = attributes.getValue("classname");
+
+
             Language language = new Language();
+            if (LanguageConverter.getInstance().getLangNameToCode().containsKey(classname)) {
+                classid = LanguageConverter.getInstance().getLangNameToCode().get(classname);
+            }
+            else {
+                if (LanguageConverter.getInstance().getLangCodeToName().containsKey(classid)) {
+                    classname = LanguageConverter.getInstance().getLangCodeToName().get(classid);
+                }
+            }
+
             language.setLanguageTag(classname);
             language.setLanguageId(classid);
+
             publication.getDocumentLanguages().add(language);
         }
         /*
@@ -229,7 +247,13 @@ public class PublicationResultHandler extends DefaultHandler {
             For the time being it prints the xml as a string
          */
         if (qName.equalsIgnoreCase("result")) {
-            OMTDPublications.add(documentMetadataRecord);
+            StringWriter sw = new StringWriter();
+            try {
+                jaxbMarshaller.marshal(documentMetadataRecord, sw);
+                OMTDPublications.add(sw.toString());
+            } catch (JAXBException e) {
+                log.error("PublicationResultHandler.endElement@result", e);
+            }
         }
         /*
             MetadataInfo
@@ -291,6 +315,7 @@ public class PublicationResultHandler extends DefaultHandler {
         else if (qName.equalsIgnoreCase("to")) {
             if (hasAuthor) {
                 PersonIdentifier personIdentifier = new PersonIdentifier();
+                personIdentifier.setPersonIdentifierSchemeName(PersonIdentifierSchemeNameEnum.OTHER);
                 personIdentifier.setValue(value);
                 author.getPersonIdentifiers().add(personIdentifier);
             }
@@ -349,15 +374,15 @@ public class PublicationResultHandler extends DefaultHandler {
         /*
             Publisher
             End of publisher element
-            TODO: publisher refers to original publisher (element publisher)
-            TODO: or to the collectedfrom publisher who actually gives the publicationIdentifier?
+            publisher refers to original publisher (element publisher)
+            or to the collectedfrom publisher who actually gives the publicationIdentifier?
          */
         else if (qName.equalsIgnoreCase("publisher")) {
-            if (!hasRelation) {
+            if (!hasRelation && !value.trim().isEmpty()) {
                 ActorInfo actorInfo = new ActorInfo();
                 RelatedOrganization relatedOrganization = new RelatedOrganization();
                 OrganizationName organizationName = new OrganizationName();
-                organizationName.setValue(value);
+                organizationName.setValue(value.trim());
 
                 relatedOrganization.getOrganizationNames().add(organizationName);
                 actorInfo.setRelatedOrganization(relatedOrganization);
@@ -395,6 +420,7 @@ public class PublicationResultHandler extends DefaultHandler {
             } else if (hasSubject) {
                 Subject subject = new Subject();
                 subject.setValue(value);
+                subject.setClassificationSchemeName(ClassificationSchemeName.OTHER);
                 publication.getSubjects().add(subject);
                 hasSubject = false;
             }
@@ -464,7 +490,7 @@ public class PublicationResultHandler extends DefaultHandler {
         }
     }
 
-    public List<DocumentMetadataRecord> getOMTDPublications() {
+    public List<String> getOMTDPublications() {
         return OMTDPublications;
     }
 

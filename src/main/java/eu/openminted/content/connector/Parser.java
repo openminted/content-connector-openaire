@@ -2,6 +2,7 @@ package eu.openminted.content.connector;
 
 import eu.openminted.content.openaire.PublicationResultHandler;
 import eu.openminted.registry.domain.DocumentMetadataRecord;
+import org.apache.log4j.Logger;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -14,7 +15,7 @@ import java.net.URL;
 import java.util.List;
 
 public class Parser {
-
+    private static Logger log = Logger.getLogger(Parser.class.getName());
     private Parser() {}
 
     private static Parser parser;
@@ -30,12 +31,12 @@ public class Parser {
             saxParser.parse(new InputSource(url.openStream()), parser.handler);
             return parser;
         } catch (ParserConfigurationException | SAXException | IOException | JAXBException e) {
-            e.printStackTrace();
+            log.error(e);
         }
         return null;
     }
 
-    public List<DocumentMetadataRecord> getOMTDPublications() {
+    public List<String> getOMTDPublications() {
         return handler.getOMTDPublications();
     }
 

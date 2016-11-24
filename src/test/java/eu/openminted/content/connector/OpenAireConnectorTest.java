@@ -1,10 +1,13 @@
 package eu.openminted.content.connector;
 
-import eu.openminted.registry.domain.Facet;
+import eu.openminted.registry.domain.DocumentMetadataRecord;
 import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Marshaller;
+import java.io.StringWriter;
 import java.util.*;
 
 
@@ -19,8 +22,8 @@ public class OpenAireConnectorTest {
         parameters.get("openairePublicationID").add("od______2806::3695906b0423d41e074bb46a9bdf9cb9");
         parameters.get("openairePublicationID").add("od______2806::36a266a2402a9214e8dda6dd9e68a3eb");
 
-        query.setParams(parameters);
-        query.setFrom(0);
+//        query.setParams(parameters);
+        query.setFrom(100);
         query.setTo(200);
 //        query.setKeyword("АНАЛИЗ ВКЛАДНЫХ ОПЕРАЦИЙ КОММЕРЧЕСКОГО БАНКА");
 
@@ -29,9 +32,7 @@ public class OpenAireConnectorTest {
         System.out.println("reading " + searchResult.getPublications().size() +
                 " publications from " + searchResult.getFrom() +
                 " to " + searchResult.getTo() +
-                " out of " + searchResult.getTotalHits() + " total hits.") ;
-//        assert searchResult.getPublications().size() == 1;
-
+                " out of " + searchResult.getTotalHits() + " total hits.");
     }
 
     @Test
@@ -42,4 +43,26 @@ public class OpenAireConnectorTest {
         System.out.println(output);
     }
 
+    @Test
+    public void print() throws Exception {
+        OpenAireConnector openAireConnector = new OpenAireConnector();
+        Query query = new Query();
+        query.setFrom(100);
+        query.setTo(200);
+        SearchResult searchResult = openAireConnector.search(query);
+
+        JAXBContext jaxbContext = JAXBContext.newInstance(DocumentMetadataRecord.class);
+        Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
+        jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+
+        for (String metadataRecord : searchResult.getPublications()) {
+            System.out.println(metadataRecord);
+        }
+    }
+
+    @Test
+    public void solr() throws Exception {
+//        OpenAireSolrClient client = new OpenAireSolrClient();
+//        client.run();
+    }
 }
