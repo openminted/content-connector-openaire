@@ -2,6 +2,7 @@ package eu.openminted.content.connector;
 
 import eu.openminted.registry.domain.Facet;
 import org.apache.commons.io.IOUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.*;
@@ -9,6 +10,7 @@ import java.util.*;
 
 public class OpenAireConnectorTest {
     @Test
+    @Ignore
     public void search() throws Exception {
         Query query = new Query();
         Map<String, List<String>> parameters = new HashMap<>();
@@ -33,6 +35,7 @@ public class OpenAireConnectorTest {
     }
 
     @Test
+    @Ignore
     public void downloadFullText() throws Exception {
         OpenAireConnector openAireConnector = new OpenAireConnector();
         String output = IOUtils.toString(openAireConnector.downloadFullText("od______2806::3596cc1b1e96409b1677a0efe085912d,od______2806::36a266a2402a9214e8dda6dd9e68a3eb"));

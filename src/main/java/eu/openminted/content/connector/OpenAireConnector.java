@@ -61,7 +61,7 @@ public class OpenAireConnector implements ContentConnector {
         address = address.replaceAll("&$", "");
 
         Parser parser = Parser.initialize(address);
-        searchResult.setPublications(parser.getOMTDPublications());
+//        searchResult.setPublications(parser.getOMTDPublications());
         searchResult.setTo(parser.getTo());
         searchResult.setFrom(parser.getFrom());
         searchResult.setTotalHits(parser.getTotalHits());
@@ -94,6 +94,11 @@ public class OpenAireConnector implements ContentConnector {
             e.printStackTrace();
         }
 
+        return null;
+    }
+
+    @Override
+    public InputStream fetchMetadata(Query query) {
         return null;
     }
 
