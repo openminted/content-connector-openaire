@@ -32,8 +32,10 @@ public class OpenAireSolrClient {
                 .setStart(start)
                 .setSort(SolrQuery.SortClause.asc("__indexrecordidentifier"));
 
-        for (String facet : query.getFacets()) {
-            solrQuery.setFields(facet);
+        if (query.getFacets() != null) {
+            for (String facet : query.getFacets()) {
+                solrQuery.setFields(facet);
+            }
         }
 
         solrQuery.setQuery(query.getKeyword());

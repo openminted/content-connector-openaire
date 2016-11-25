@@ -46,6 +46,7 @@ public class OpenAireConnectorTest {
     }
 
     @Test
+    @Ignore
     public void print() throws Exception {
         OpenAireConnector openAireConnector = new OpenAireConnector();
         Query query = new Query();
