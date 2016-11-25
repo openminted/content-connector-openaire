@@ -63,6 +63,7 @@ public class OpenAireConnectorTest {
     }
 
     @Test
+    @Ignore
     public void solr() throws Exception {
         Query query = new Query();
         query.setFrom(10);

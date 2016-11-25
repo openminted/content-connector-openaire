@@ -1,6 +1,5 @@
 package eu.openminted.content.openaire;
 
-import eu.openminted.content.connector.OpenAireConnector;
 import eu.openminted.registry.domain.*;
 import org.apache.log4j.Logger;
 import org.xml.sax.Attributes;
@@ -32,7 +31,6 @@ public class PublicationResultHandler extends DefaultHandler {
     private DocumentDistributionInfo documentDistributionInfo;
     private String description = "";
     private String value = "";
-    private boolean hasResults = false;
     private boolean hasAuthor = false;
     private boolean hasRelation = false;
     private boolean hasKeyword = false;
