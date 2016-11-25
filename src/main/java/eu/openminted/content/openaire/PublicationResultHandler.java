@@ -43,9 +43,9 @@ public class PublicationResultHandler extends DefaultHandler {
 
 
     private List<String> OMTDPublications;
-    private int size;
-    private int page;
-    private int total;
+//    private int size;
+//    private int page;
+//    private int total;
 
     public PublicationResultHandler() throws JAXBException {
         OMTDPublications = new ArrayList<>();
@@ -60,13 +60,13 @@ public class PublicationResultHandler extends DefaultHandler {
         /*
             End of query metadata section
          */
-        if (qName.equalsIgnoreCase("results")) {
-            hasResults = true;
-        }
+//        if (qName.equalsIgnoreCase("results")) {
+//            hasResults = true;
+//        }
         /*
             DocumentMetadataRecord
          */
-        else if (qName.equalsIgnoreCase("result")) {
+        if (qName.equalsIgnoreCase("result")) {
             documentMetadataRecord = new DocumentMetadataRecord();
             Document document = new Document();
             publication = new DocumentInfo();
@@ -234,9 +234,7 @@ public class PublicationResultHandler extends DefaultHandler {
             licenceInfo.setNonStandardLicenceTermsURL(classid);
 
             rightsInfo.getLicenceInfos().add(licenceInfo);
-            JournalInfo journalInfo = new JournalInfo();
-            journalInfo.getRights().add(rightsInfo);
-
+            documentDistributionInfo.getRightsInfo().add(rightsInfo);
         }
     }
 
@@ -459,24 +457,24 @@ public class PublicationResultHandler extends DefaultHandler {
             }
         }
 
-        else if (qName.equalsIgnoreCase("size")) {
-            if (!hasResults) {
-                size = Integer.parseInt(value);
-            }
-        }
-        else if (qName.equalsIgnoreCase("page")) {
-            if (!hasResults) {
-                page = Integer.parseInt(value);
-            }
-        }
-        else if (qName.equalsIgnoreCase("total")) {
-            if (!hasResults) {
-                total = Integer.parseInt(value);
-            }
-        }
-        else if (qName.equalsIgnoreCase("results")) {
-            hasResults = false;
-        }
+//        else if (qName.equalsIgnoreCase("size")) {
+//            if (!hasResults) {
+//                size = Integer.parseInt(value);
+//            }
+//        }
+//        else if (qName.equalsIgnoreCase("page")) {
+//            if (!hasResults) {
+//                page = Integer.parseInt(value);
+//            }
+//        }
+//        else if (qName.equalsIgnoreCase("total")) {
+//            if (!hasResults) {
+//                total = Integer.parseInt(value);
+//            }
+//        }
+//        else if (qName.equalsIgnoreCase("results")) {
+//            hasResults = false;
+//        }
     }
 
     @Override
@@ -494,15 +492,15 @@ public class PublicationResultHandler extends DefaultHandler {
         return OMTDPublications;
     }
 
-    public int getSize() {
-        return size;
-    }
-
-    public int getPage() {
-        return page;
-    }
-
-    public int getTotal() {
-        return total;
-    }
+//    public int getSize() {
+//        return size;
+//    }
+//
+//    public int getPage() {
+//        return page;
+//    }
+//
+//    public int getTotal() {
+//        return total;
+//    }
 }

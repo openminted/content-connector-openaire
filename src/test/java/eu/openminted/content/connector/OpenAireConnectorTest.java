@@ -2,6 +2,8 @@ package eu.openminted.content.connector;
 
 import eu.openminted.registry.domain.DocumentMetadataRecord;
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -62,7 +64,20 @@ public class OpenAireConnectorTest {
 
     @Test
     public void solr() throws Exception {
-//        OpenAireSolrClient client = new OpenAireSolrClient();
-//        client.run();
+        Query query = new Query();
+        query.setFrom(10);
+        query.setTo(15);
+        List<String> facets = new ArrayList<>();
+        facets.add("__result");
+        query.setFacets(facets);
+        query.setKeyword("*:*");
+        OpenAireConnector openAireConnector = new OpenAireConnector();
+        SearchResult searchResult = openAireConnector.search(query);
+
+        for (String metadataRecord : searchResult.getPublications()) {
+            System.out.println(metadataRecord);
+        }
+
+        System.out.println(searchResult.getFacets());
     }
 }
