@@ -38,8 +38,6 @@ public class PublicationResultHandler extends DefaultHandler {
     private boolean hasAbstract = false;
     private Marshaller jaxbMarshaller;
 
-
-
     private List<String> OMTDPublications;
 
     public PublicationResultHandler() throws JAXBException {
@@ -91,8 +89,7 @@ public class PublicationResultHandler extends DefaultHandler {
          */
         else if (qName.equalsIgnoreCase("rel")) {
             hasRelation = true;
-        }
-        else if (qName.equalsIgnoreCase("to")) {
+        } else if (qName.equalsIgnoreCase("to")) {
             String classAttribute = attributes.getValue("class");
             ResultRelationsEnum resultRelationsEnum = ResultRelationsEnum.fromValue(classAttribute);
 
@@ -125,18 +122,23 @@ public class PublicationResultHandler extends DefaultHandler {
             }
             publication.setPublicationType(publicationTypeEnum);
         }
-        /*
-            collectedfrom
-         */
-        else if (qName.equalsIgnoreCase("collectedfrom")) {
-            String id = attributes.getValue("id");
-            publicationIdentifier = new PublicationIdentifier();
-            publicationIdentifier.setValue(id);
-        }
+//        /*
+//            collectedfrom
+//         */
+//        else if (qName.equalsIgnoreCase("collectedfrom")) {
+//            String id = attributes.getValue("id");
+//            String name = attributes.getValue("name");
+//            publicationIdentifier = new PublicationIdentifier();
+//            if (!name.isEmpty())
+//                publicationIdentifier.setValue(name);
+//            else if (!id.isEmpty())
+//                publicationIdentifier.setValue(id);
+//        }
         /*
             PublicationIdentifierSchemeName & schemeURI (if necessary)
          */
         else if (qName.equalsIgnoreCase("pid")) {
+            publicationIdentifier = new PublicationIdentifier();
             String classname = attributes.getValue("classname");
             PublicationIdentifierSchemeNameEnum publicationIdentifierSchemeNameEnum;
             try {
@@ -146,9 +148,7 @@ public class PublicationResultHandler extends DefaultHandler {
             }
             publicationIdentifier.setPublicationIdentifierSchemeName(publicationIdentifierSchemeNameEnum);
 
-            if (publicationIdentifierSchemeNameEnum != PublicationIdentifierSchemeNameEnum.OTHER) {
-                publicationIdentifier.setSchemeURI("");
-            } else {
+            if (publicationIdentifierSchemeNameEnum == PublicationIdentifierSchemeNameEnum.OTHER) {
                 String schemeid = attributes.getValue("schemeid");
                 if (!schemeid.isEmpty())
                     publicationIdentifier.setSchemeURI("http://api.openaire.eu/vocabularies/" + schemeid + "/" + classname);
@@ -156,9 +156,6 @@ public class PublicationResultHandler extends DefaultHandler {
                     publicationIdentifier.setSchemeURI("http://api.openaire.eu/vocabularies/dnet:pid_types/UNKNOWN");
                 }
             }
-
-            publication.getIdentifiers().add(publicationIdentifier);
-
         }
         /*
             DocumentLanguage
@@ -172,8 +169,7 @@ public class PublicationResultHandler extends DefaultHandler {
             Language language = new Language();
             if (LanguageConverter.getInstance().getLangNameToCode().containsKey(classname)) {
                 classid = LanguageConverter.getInstance().getLangNameToCode().get(classname);
-            }
-            else {
+            } else {
                 if (LanguageConverter.getInstance().getLangCodeToName().containsKey(classid)) {
                     classname = LanguageConverter.getInstance().getLangCodeToName().get(classid);
                 }
@@ -249,7 +245,7 @@ public class PublicationResultHandler extends DefaultHandler {
             MetadataIdentifier metadataIdentifier = new MetadataIdentifier();
             metadataIdentifier.setValue(value);
             metadataHeaderInfo.setMetadataRecordIdentifier(metadataIdentifier);
-
+            value = "";
         }
         /*
             MetadataCreationDate
@@ -263,6 +259,7 @@ public class PublicationResultHandler extends DefaultHandler {
                 gregorianCalendar.setTime(date);
                 XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
                 metadataHeaderInfo.setMetadataCreationDate(xmlGregorianCalendar);
+                value = "";
             } catch (ParseException | DatatypeConfigurationException e) {
                 e.printStackTrace();
             }
@@ -271,7 +268,7 @@ public class PublicationResultHandler extends DefaultHandler {
             MetadataLastDateUpdated
             End of dri:dateOfTransformation element
          */
-        else if(qName.equalsIgnoreCase("dri:dateOfTransformation")){
+        else if (qName.equalsIgnoreCase("dri:dateOfTransformation")) {
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
             try {
                 java.util.Date date = simpleDateFormat.parse(value);
@@ -279,6 +276,7 @@ public class PublicationResultHandler extends DefaultHandler {
                 gregorianCalendar.setTime(date);
                 XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
                 metadataHeaderInfo.setMetadataLastDateUpdated(xmlGregorianCalendar);
+                value = "";
             } catch (ParseException | DatatypeConfigurationException e) {
                 e.printStackTrace();
             }
@@ -293,7 +291,13 @@ public class PublicationResultHandler extends DefaultHandler {
             if (!hasRelation) {
                 title.setValue(value);
                 publication.getTitles().add(title);
+                value = "";
             }
+        }
+        else if (qName.equalsIgnoreCase("pid")) {
+            publicationIdentifier.setValue(value);
+            publication.getIdentifiers().add(publicationIdentifier);
+            value = "";
         }
         /*
             PersonIdentifier
@@ -305,6 +309,7 @@ public class PublicationResultHandler extends DefaultHandler {
                 personIdentifier.setPersonIdentifierSchemeName(PersonIdentifierSchemeNameEnum.OTHER);
                 personIdentifier.setValue(value);
                 author.getPersonIdentifiers().add(personIdentifier);
+                value = "";
             }
         }
         /*
@@ -315,6 +320,7 @@ public class PublicationResultHandler extends DefaultHandler {
             PersonName personName = new PersonName();
             personName.setValue(value);
             author.getPersonNames().add(personName);
+            value = "";
         }
         /*
             Author
@@ -356,6 +362,7 @@ public class PublicationResultHandler extends DefaultHandler {
                 }
 
                 publication.setPublicationDate(date);
+                value = "";
             }
         }
         /*
@@ -374,6 +381,7 @@ public class PublicationResultHandler extends DefaultHandler {
                 relatedOrganization.getOrganizationNames().add(organizationName);
                 actorInfo.setRelatedOrganization(relatedOrganization);
                 publication.setPublisher(actorInfo);
+                value = "";
             }
         }
         /*
@@ -384,6 +392,7 @@ public class PublicationResultHandler extends DefaultHandler {
             if (!value.trim().isEmpty()) {
                 documentDistributionInfo.getDistributionMediums().add(DistributionMediumEnum.DOWNLOADABLE);
                 documentDistributionInfo.getDownloadURLs().add(value);
+                value = "";
             }
         }
         /*
@@ -411,6 +420,7 @@ public class PublicationResultHandler extends DefaultHandler {
                 publication.getSubjects().add(subject);
                 hasSubject = false;
             }
+            value = "";
         }
         /*
             Abstract
@@ -443,6 +453,7 @@ public class PublicationResultHandler extends DefaultHandler {
                 contributor.setRelatedOrganization(relatedOrganization);
 
                 publication.getContributors().add(contributor);
+                value = "";
             }
         }
     }

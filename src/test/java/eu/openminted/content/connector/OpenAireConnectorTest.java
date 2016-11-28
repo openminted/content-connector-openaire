@@ -18,23 +18,35 @@ public class OpenAireConnectorTest {
     @Ignore
     public void search() throws Exception {
         Query query = new Query();
-        Map<String, List<String>> parameters = new HashMap<>();
-        parameters.put("openairePublicationID", new ArrayList<>());
-        parameters.get("openairePublicationID").add("od______2806::3596cc1b1e96409b1677a0efe085912d");
-        parameters.get("openairePublicationID").add("od______2806::3695906b0423d41e074bb46a9bdf9cb9");
-        parameters.get("openairePublicationID").add("od______2806::36a266a2402a9214e8dda6dd9e68a3eb");
+        query.setFrom(0);
+        query.setTo(1);
+        query.setParams(new HashMap<>());
+        query.getParams().put("fl", new ArrayList<>());
+        query.getParams().get("fl").add("__result");
+        query.getParams().put("sort", new ArrayList<>());
+        query.getParams().get("sort").add("__indexrecordidentifier asc");
 
-//        query.setParams(parameters);
-        query.setFrom(100);
-        query.setTo(200);
-//        query.setKeyword("АНАЛИЗ ВКЛАДНЫХ ОПЕРАЦИЙ КОММЕРЧЕСКОГО БАНКА");
 
+        query.setFacets(new ArrayList<>());
+        query.setKeyword("*:*");
         OpenAireConnector openAireConnector = new OpenAireConnector();
+//        openAireConnector.setSchemaAddress("https://www.openaire.eu/schema/0.3/oaf-0.3.xsd");
         SearchResult searchResult = openAireConnector.search(query);
-        System.out.println("reading " + searchResult.getPublications().size() +
-                " publications from " + searchResult.getFrom() +
-                " to " + searchResult.getTo() +
-                " out of " + searchResult.getTotalHits() + " total hits.");
+
+        if (searchResult.getPublications() != null) {
+            for (String metadataRecord : searchResult.getPublications()) {
+                System.out.println(metadataRecord);
+            }
+
+
+            System.out.println(searchResult.getFacets());
+            System.out.println("reading " + searchResult.getPublications().size() +
+                    " publications from " + searchResult.getFrom() +
+                    " to " + searchResult.getTo() +
+                    " out of " + searchResult.getTotalHits() + " total hits.");
+        } else {
+            System.out.println("Could not find any result with these parameters or keyword");
+        }
     }
 
     @Test
@@ -61,25 +73,5 @@ public class OpenAireConnectorTest {
         for (String metadataRecord : searchResult.getPublications()) {
             System.out.println(metadataRecord);
         }
-    }
-
-    @Test
-    @Ignore
-    public void solr() throws Exception {
-        Query query = new Query();
-        query.setFrom(10);
-        query.setTo(15);
-        List<String> facets = new ArrayList<>();
-        facets.add("__result");
-        query.setFacets(facets);
-        query.setKeyword("*:*");
-        OpenAireConnector openAireConnector = new OpenAireConnector();
-        SearchResult searchResult = openAireConnector.search(query);
-
-        for (String metadataRecord : searchResult.getPublications()) {
-            System.out.println(metadataRecord);
-        }
-
-        System.out.println(searchResult.getFacets());
     }
 }

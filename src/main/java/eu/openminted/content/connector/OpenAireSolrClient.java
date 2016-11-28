@@ -9,6 +9,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CursorMarkParams;
 
 import java.io.IOException;
+import java.util.List;
 
 public class OpenAireSolrClient {
     private final String hosts = "index1.t.hadoop.research-infrastructures.eu:9983," +
@@ -29,12 +30,37 @@ public class OpenAireSolrClient {
         start = query.getFrom();
 
         SolrQuery solrQuery = (new SolrQuery()).setRows(rows)
-                .setStart(start)
-                .setSort(SolrQuery.SortClause.asc("__indexrecordidentifier"));
+                .setStart(start);
+//                .setSort(SolrQuery.SortClause.asc("__indexrecordidentifier"));
 
         if (query.getFacets() != null) {
+            solrQuery.setFacet(true);
             for (String facet : query.getFacets()) {
-                solrQuery.setFields(facet);
+                solrQuery.setFacetPrefix(facet);
+            }
+        }
+
+        if (query.getParams() != null) {
+
+            for (String key : query.getParams().keySet()) {
+                if (key.equalsIgnoreCase("sort")) {
+                    for (String sortField : query.getParams().get("sort") ) {
+                        String[] sortingParameter = sortField.split(" ");
+                        if (sortingParameter.length == 2) {
+                            SolrQuery.ORDER order = SolrQuery.ORDER.valueOf(sortingParameter[1]);
+                            solrQuery.setSort(sortingParameter[0], order);
+                        } else if (sortingParameter.length == 1) {
+                            solrQuery.setSort(sortingParameter[0], SolrQuery.ORDER.desc);
+                        }
+                    }
+                } else if (key.equalsIgnoreCase("fl")) {
+                    for (String field : query.getParams().get("fl") ) {
+                        solrQuery.addField(field);
+                    }
+                } else {
+                    List<String> vals = query.getParams().get(key);
+                    solrQuery.set(key, vals.toArray(new String[vals.size()]));
+                }
             }
         }
 
