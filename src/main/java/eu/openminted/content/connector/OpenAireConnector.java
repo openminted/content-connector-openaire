@@ -4,6 +4,7 @@ import eu.openminted.content.openaire.OpenAireNamespaceContext;
 import eu.openminted.registry.domain.Facet;
 import eu.openminted.registry.domain.Value;
 import org.apache.log4j.Logger;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -26,7 +27,6 @@ import java.util.List;
 public class OpenAireConnector implements ContentConnector {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
     private String schemaAddress;
-    OpenAireNamespaceContext context = new OpenAireNamespaceContext();
 
     @Override
     public SearchResult search(Query query) {
@@ -35,7 +35,7 @@ public class OpenAireConnector implements ContentConnector {
         try {
             Parser parser = new Parser();
             OpenAireSolrClient client = new OpenAireSolrClient();
-            QueryResponse response = client.execute(query);
+            QueryResponse response = client.query(query);
             searchResult.setFrom((int) response.getResults().getStart());
             searchResult.setTo((int) response.getResults().getStart() + response.getResults().size());
             searchResult.setTotalHits((int) response.getResults().getNumFound());
@@ -87,7 +87,7 @@ public class OpenAireConnector implements ContentConnector {
 
                 parser.parse(new InputSource(new StringReader(xml)));
                 searchResult.setPublications(new ArrayList<>());
-                searchResult.getPublications().addAll(parser.getOMTDPublications());
+                searchResult.getPublications().add(parser.getOMTDPublication());
             }
         } catch (Exception e) {
             log.error("OpenAireConnector.search", e);
@@ -95,7 +95,7 @@ public class OpenAireConnector implements ContentConnector {
         return searchResult;
     }
 
-    public Validator createValidator(String schemaFileUrl) throws MalformedURLException, SAXException {
+    private Validator createValidator(String schemaFileUrl) throws MalformedURLException, SAXException {
         log.info("Waiting for XML Validator");
         URL schemaUrl = new URL(schemaFileUrl);
         SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
@@ -110,7 +110,23 @@ public class OpenAireConnector implements ContentConnector {
 
     @Override
     public InputStream fetchMetadata(Query query) {
-        return null;
+        OpenAireSolrClient client = new OpenAireSolrClient();
+        PipedInputStream inputStream = new PipedInputStream();
+        try {
+            new Thread(()->
+            {
+                try {
+                    client.fetchMetadata(query);
+                } catch (IOException | SolrServerException | InterruptedException e) {
+                    log.error("OpenAireConnector.fetchMetadata", e);
+                }
+            }).start();
+
+            client.getPipedOutputStream().connect(inputStream);
+        } catch (IOException e) {
+            log.error("OpenAireConnector.fetchMetadata", e);
+        }
+        return inputStream;
     }
 
     @Override

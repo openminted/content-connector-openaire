@@ -1,37 +1,65 @@
 package eu.openminted.content.connector;
 
+import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CursorMarkParams;
 
 import java.io.IOException;
+import java.io.PipedOutputStream;
 import java.util.List;
 
 public class OpenAireSolrClient {
+
     private final String hosts = "index1.t.hadoop.research-infrastructures.eu:9983," +
             "index2.t.hadoop.research-infrastructures.eu:9983," +
             "index3.t.hadoop.research-infrastructures.eu:9983";
     private final String defaultCollection = "DMF-index-openaire";
     private SolrClient solrClient;
-
-    private int rows = 10;
-    private int start = 0;
+    private final PipedOutputStream outputStream = new PipedOutputStream();
 
     public OpenAireSolrClient() {
         this.solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
     }
 
-    public QueryResponse execute(Query query) throws IOException, SolrServerException {
-        rows = query.getTo() - query.getFrom();
-        start = query.getFrom();
+    public QueryResponse query(Query query) throws IOException, SolrServerException {
+        SolrQuery solrQuery = queryBuilder(query, false);
+        return solrClient.query(defaultCollection, solrQuery);
+    }
 
-        SolrQuery solrQuery = (new SolrQuery()).setRows(rows)
-                .setStart(start);
-//                .setSort(SolrQuery.SortClause.asc("__indexrecordidentifier"));
+    public void fetchMetadata(Query query) throws IOException, SolrServerException, InterruptedException {
+        SolrQuery solrQuery = queryBuilder(query, true);
+        String cursorMark = CursorMarkParams.CURSOR_MARK_START;
+        boolean done = false;
+
+        while (!done) {
+            solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
+            QueryResponse rsp = solrClient.queryAndStreamResponse(defaultCollection, solrQuery,
+                    new OpenAireStreamingResponseCallback(outputStream, "__result"));
+            String nextCursorMark = rsp.getNextCursorMark();
+            if (cursorMark.equals(nextCursorMark)) {
+                done = true;
+            }
+            cursorMark = nextCursorMark;
+        }
+    }
+
+    private SolrQuery queryBuilder(Query query, boolean hasCursorMarkParams) {
+        int rows = 10;
+        int start = 0;
+
+        if (query.getTo() > 0) {
+            rows = query.getTo() - query.getFrom();
+            start = query.getFrom();
+        }
+
+        SolrQuery solrQuery = (new SolrQuery()).setRows(rows);
+
+        if (hasCursorMarkParams)
+            solrQuery.setStart(start);
 
         if (query.getFacets() != null) {
             solrQuery.setFacet(true);
@@ -44,7 +72,7 @@ public class OpenAireSolrClient {
 
             for (String key : query.getParams().keySet()) {
                 if (key.equalsIgnoreCase("sort")) {
-                    for (String sortField : query.getParams().get("sort") ) {
+                    for (String sortField : query.getParams().get("sort")) {
                         String[] sortingParameter = sortField.split(" ");
                         if (sortingParameter.length == 2) {
                             SolrQuery.ORDER order = SolrQuery.ORDER.valueOf(sortingParameter[1]);
@@ -54,7 +82,7 @@ public class OpenAireSolrClient {
                         }
                     }
                 } else if (key.equalsIgnoreCase("fl")) {
-                    for (String field : query.getParams().get("fl") ) {
+                    for (String field : query.getParams().get("fl")) {
                         solrQuery.addField(field);
                     }
                 } else {
@@ -66,29 +94,12 @@ public class OpenAireSolrClient {
 
         solrQuery.setQuery(query.getKeyword());
 
-
-        return solrClient.query(defaultCollection, solrQuery);
+        return solrQuery;
     }
 
-    public void runWithCursor() throws IOException, SolrServerException {
-        SolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
-        SolrQuery q = (new SolrQuery()).setRows(5).setSort(SolrQuery.SortClause.asc("__indexrecordidentifier")).setFields("__result").setQuery("*:*");
-        String cursorMark = CursorMarkParams.CURSOR_MARK_START;
-        boolean done = false;
 
-        while (!done) {
-            q.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
-            QueryResponse rsp = solrClient.query("DMF-index-openaire", q);
-            String nextCursorMark = rsp.getNextCursorMark();
 
-            for (SolrDocument document : rsp.getResults()) {
-                System.out.println(document.getFieldValue("__result"));
-            }
-
-            if (cursorMark.equals(nextCursorMark)) {
-                done = true;
-            }
-            cursorMark = nextCursorMark;
-        }
+    public PipedOutputStream getPipedOutputStream() {
+        return outputStream;
     }
 }

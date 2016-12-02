@@ -2,14 +2,12 @@ package eu.openminted.content.connector;
 
 import eu.openminted.registry.domain.DocumentMetadataRecord;
 import org.apache.commons.io.IOUtils;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrDocument;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
-import java.io.StringWriter;
+import java.io.*;
 import java.util.*;
 
 
@@ -38,7 +36,6 @@ public class OpenAireConnectorTest {
                 System.out.println(metadataRecord);
             }
 
-
             System.out.println(searchResult.getFacets());
             System.out.println("reading " + searchResult.getPublications().size() +
                     " publications from " + searchResult.getFrom() +
@@ -51,9 +48,30 @@ public class OpenAireConnectorTest {
 
     @Test
     @Ignore
+    public void fetchMetadata() throws Exception {
+        OpenAireConnector openAireConnector = new OpenAireConnector();
+        Query query = new Query();
+        query.setParams(new HashMap<>());
+        query.getParams().put("fl", new ArrayList<>());
+        query.getParams().get("fl").add("__result");
+        query.getParams().put("sort", new ArrayList<>());
+        query.getParams().get("sort").add("__indexrecordidentifier asc");
+        query.setKeyword("*:*");
+
+        InputStream inputStream = openAireConnector.fetchMetadata(query);
+        String line;
+        BufferedReader br  = new BufferedReader(new InputStreamReader(inputStream));
+        while ((line = br.readLine()) != null) {
+            System.out.println(line);
+        }
+        br.close();
+    }
+
+    @Test
+    @Ignore
     public void downloadFullText() throws Exception {
         OpenAireConnector openAireConnector = new OpenAireConnector();
-        String output = IOUtils.toString(openAireConnector.downloadFullText("od______2806::3596cc1b1e96409b1677a0efe085912d,od______2806::36a266a2402a9214e8dda6dd9e68a3eb"));
+        String output = IOUtils.toString(openAireConnector.downloadFullText("od______2806::3596cc1b1e96409b1677a0efe085912d,od______2806::36a266a2402a9214e8dda6dd9e68a3eb"), "UTF-8");
         System.out.println(output);
     }
 

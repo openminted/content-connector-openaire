@@ -38,10 +38,9 @@ public class PublicationResultHandler extends DefaultHandler {
     private boolean hasAbstract = false;
     private Marshaller jaxbMarshaller;
 
-    private List<String> OMTDPublications;
+    private String OMTDPublication;
 
     public PublicationResultHandler() throws JAXBException {
-        OMTDPublications = new ArrayList<>();
         JAXBContext jaxbContext = JAXBContext.newInstance(DocumentMetadataRecord.class);
         jaxbMarshaller = jaxbContext.createMarshaller();
         jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
@@ -233,7 +232,7 @@ public class PublicationResultHandler extends DefaultHandler {
             StringWriter sw = new StringWriter();
             try {
                 jaxbMarshaller.marshal(documentMetadataRecord, sw);
-                OMTDPublications.add(sw.toString());
+                OMTDPublication = sw.toString();
             } catch (JAXBException e) {
                 log.error("PublicationResultHandler.endElement@result", e);
             }
@@ -469,7 +468,7 @@ public class PublicationResultHandler extends DefaultHandler {
         }
     }
 
-    public List<String> getOMTDPublications() {
-        return OMTDPublications;
+    public String getOMTDPublication() {
+        return OMTDPublication;
     }
 }

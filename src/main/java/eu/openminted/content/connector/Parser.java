@@ -30,29 +30,8 @@ public class Parser {
         saxParser.parse(inputSource, handler);
     }
 
-    public List<String> getOMTDPublications() {
-        return handler.getOMTDPublications();
+    public String getOMTDPublication() {
+        return handler.getOMTDPublication();
     }
 
-//    public int getFrom() {
-//        if (handler.getTotal() > handler.getSize()) {
-//            return handler.getSize() * handler.getPage() - handler.getSize();
-//        }
-//        else {
-//            return 0;
-//        }
-//    }
-//
-//    public int getTo() {
-//        if (handler.getTotal() > handler.getSize()) {
-//            return handler.getSize() * handler.getPage();
-//        }
-//        else {
-//            return handler.getTotal();
-//        }
-//    }
-//
-//    public int getTotalHits() {
-//        return handler.getTotal();
-//    }
 }
