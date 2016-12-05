@@ -1,5 +1,6 @@
 package eu.openminted.content.openaire;
 
+import com.sun.xml.internal.ws.util.Pool;
 import eu.openminted.registry.domain.*;
 import org.apache.log4j.Logger;
 import org.xml.sax.Attributes;
@@ -44,6 +45,7 @@ public class PublicationResultHandler extends DefaultHandler {
         JAXBContext jaxbContext = JAXBContext.newInstance(DocumentMetadataRecord.class);
         jaxbMarshaller = jaxbContext.createMarshaller();
         jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+        jaxbMarshaller.setProperty("com.sun.xml.bind.xmlDeclaration", false);
     }
 
     @Override
@@ -232,7 +234,7 @@ public class PublicationResultHandler extends DefaultHandler {
             StringWriter sw = new StringWriter();
             try {
                 jaxbMarshaller.marshal(documentMetadataRecord, sw);
-                OMTDPublication = sw.toString();
+                OMTDPublication = sw.toString() + "\n";
             } catch (JAXBException e) {
                 log.error("PublicationResultHandler.endElement@result", e);
             }

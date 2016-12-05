@@ -31,6 +31,7 @@ public class OpenAireStreamingResponseCallback extends StreamingResponseCallback
                     .replaceAll("\\[|\\]", "");
             parser.parse(new InputSource(new StringReader(xml)));
             outputStream.write(parser.getOMTDPublication().getBytes());
+            outputStream.flush();
         } catch (IOException | SAXException | JAXBException | ParserConfigurationException e) {
             log.error("OpenAireStreamingResponseCallback.streamSolrDocument", e);
         }

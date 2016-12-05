@@ -13,6 +13,7 @@ import java.io.PipedOutputStream;
 import java.util.List;
 
 public class OpenAireSolrClient {
+    private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
 
     private final String hosts = "index1.t.hadoop.research-infrastructures.eu:9983," +
             "index2.t.hadoop.research-infrastructures.eu:9983," +
@@ -30,20 +31,36 @@ public class OpenAireSolrClient {
         return solrClient.query(defaultCollection, solrQuery);
     }
 
-    public void fetchMetadata(Query query) throws IOException, SolrServerException, InterruptedException {
+    public void fetchMetadata(Query query) {
         SolrQuery solrQuery = queryBuilder(query, true);
         String cursorMark = CursorMarkParams.CURSOR_MARK_START;
         boolean done = false;
 
-        while (!done) {
-            solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
-            QueryResponse rsp = solrClient.queryAndStreamResponse(defaultCollection, solrQuery,
-                    new OpenAireStreamingResponseCallback(outputStream, "__result"));
-            String nextCursorMark = rsp.getNextCursorMark();
-            if (cursorMark.equals(nextCursorMark)) {
-                done = true;
+        try {
+            outputStream.write("<OMTDPublications>\n".getBytes());
+            outputStream.flush();
+            while (!done) {
+                solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
+                QueryResponse rsp = solrClient.queryAndStreamResponse(defaultCollection, solrQuery,
+                        new OpenAireStreamingResponseCallback(outputStream, "__result"));
+                String nextCursorMark = rsp.getNextCursorMark();
+                if (cursorMark.equals(nextCursorMark)) {
+                    done = true;
+                }
+                cursorMark = nextCursorMark;
             }
-            cursorMark = nextCursorMark;
+            outputStream.write("</OMTDPublications>\n".getBytes());
+            outputStream.flush();
+        }
+        catch (IOException | SolrServerException e) {
+            log.error("OpenAireSolrClient.fetchMetadata", e);
+        }
+        finally {
+            try {
+                outputStream.close();
+            } catch (IOException e) {
+                log.error("OpenAireSolrClient.fetchMetadata", e);
+            }
         }
     }
 

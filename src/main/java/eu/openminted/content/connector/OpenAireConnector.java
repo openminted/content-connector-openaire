@@ -114,18 +114,13 @@ public class OpenAireConnector implements ContentConnector {
         PipedInputStream inputStream = new PipedInputStream();
         try {
             new Thread(()->
-            {
-                try {
-                    client.fetchMetadata(query);
-                } catch (IOException | SolrServerException | InterruptedException e) {
-                    log.error("OpenAireConnector.fetchMetadata", e);
-                }
-            }).start();
+                    client.fetchMetadata(query)).start();
 
             client.getPipedOutputStream().connect(inputStream);
         } catch (IOException e) {
             log.error("OpenAireConnector.fetchMetadata", e);
         }
+
         return inputStream;
     }
 
