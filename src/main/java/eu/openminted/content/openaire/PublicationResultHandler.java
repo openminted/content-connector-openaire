@@ -1,6 +1,5 @@
 package eu.openminted.content.openaire;
 
-import com.sun.xml.internal.ws.util.Pool;
 import eu.openminted.registry.domain.*;
 import org.apache.log4j.Logger;
 import org.xml.sax.Attributes;
@@ -16,9 +15,7 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import java.io.StringWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.GregorianCalendar;
-import java.util.List;
 
 public class PublicationResultHandler extends DefaultHandler {
     private static Logger log = Logger.getLogger(PublicationResultHandler.class.getName());
