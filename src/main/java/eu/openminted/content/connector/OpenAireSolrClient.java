@@ -12,8 +12,12 @@ import java.io.IOException;
 import java.io.PipedOutputStream;
 import java.util.List;
 
-public class OpenAireSolrClient {
+class OpenAireSolrClient {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
+    private final String RESULT_TYPE_ID_FACET_FIELD = "resulttypeid";
+    private final String RESULT_TYPE_ID_FACET_QUERY = "resulttypeid:publication";
+    private final String DELETED_BY_INFERENCE_FACET_FIELD = "deletedbyinference";
+    private final String DELETED_BY_INFERENCE_FACET_QUERY = "deletedbyinference:false";
 
     private final String hosts = "index1.t.hadoop.research-infrastructures.eu:9983," +
             "index2.t.hadoop.research-infrastructures.eu:9983," +
@@ -22,17 +26,17 @@ public class OpenAireSolrClient {
     private SolrClient solrClient;
     private final PipedOutputStream outputStream = new PipedOutputStream();
 
-    public OpenAireSolrClient() {
+    OpenAireSolrClient() {
         this.solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
     }
 
-    public QueryResponse query(Query query) throws IOException, SolrServerException {
-        SolrQuery solrQuery = queryBuilder(query, false);
+    QueryResponse query(Query query) throws IOException, SolrServerException {
+        SolrQuery solrQuery = queryBuilder(query);
         return solrClient.query(defaultCollection, solrQuery);
     }
 
-    public void fetchMetadata(Query query) {
-        SolrQuery solrQuery = queryBuilder(query, true);
+    void fetchMetadata(Query query) {
+        SolrQuery solrQuery = queryBuilder(query);
         String cursorMark = CursorMarkParams.CURSOR_MARK_START;
         boolean done = false;
 
@@ -64,24 +68,47 @@ public class OpenAireSolrClient {
         }
     }
 
-    private SolrQuery queryBuilder(Query query, boolean hasCursorMarkParams) {
+    private SolrQuery queryBuilder(Query query) {
         int rows = 10;
         int start = 0;
 
-        if (query.getTo() > 0) {
-            rows = query.getTo() - query.getFrom();
+        if (query.getFrom() > 0) {
             start = query.getFrom();
         }
 
-        SolrQuery solrQuery = (new SolrQuery()).setRows(rows);
+        if (query.getTo() > 0) {
+            rows = query.getTo() - start;
+        }
 
-        if (hasCursorMarkParams)
-            solrQuery.setStart(start);
+        SolrQuery solrQuery = (new SolrQuery()).setStart(start).setRows(rows);
 
         if (query.getFacets() != null) {
             solrQuery.setFacet(true);
-            for (String facet : query.getFacets()) {
-                solrQuery.setFacetPrefix(facet);
+
+            /*
+                Facets resulttypeid and deletedbyinference should be inserted by default.
+             */
+            if (!query.getFacets().contains(RESULT_TYPE_ID_FACET_FIELD)) {
+                query.getFacets().add(RESULT_TYPE_ID_FACET_FIELD);
+                solrQuery.addFacetField(RESULT_TYPE_ID_FACET_FIELD);
+            }
+
+            if (!query.getFacets().contains(DELETED_BY_INFERENCE_FACET_FIELD)) {
+                query.getFacets().add(DELETED_BY_INFERENCE_FACET_FIELD);
+                solrQuery.addFacetField(DELETED_BY_INFERENCE_FACET_FIELD);
+            }
+
+            if (query.getFacets().size() > 0) {
+                solrQuery.addFacetField(query.getFacets().toArray(new String[query.getFacets().size()]));
+
+                for (String facet : query.getFacets()) {
+                    if (facet.equalsIgnoreCase(RESULT_TYPE_ID_FACET_FIELD))
+                        solrQuery.addFacetQuery(RESULT_TYPE_ID_FACET_QUERY);
+                    else if (facet.equalsIgnoreCase(DELETED_BY_INFERENCE_FACET_FIELD))
+                        solrQuery.addFacetQuery(DELETED_BY_INFERENCE_FACET_QUERY);
+                    else
+                        solrQuery.addFacetQuery(facet);
+                }
             }
         }
 
@@ -110,13 +137,12 @@ public class OpenAireSolrClient {
         }
 
         solrQuery.setQuery(query.getKeyword());
+        System.out.println(solrQuery);
 
         return solrQuery;
     }
 
-
-
-    public PipedOutputStream getPipedOutputStream() {
+    PipedOutputStream getPipedOutputStream() {
         return outputStream;
     }
 }

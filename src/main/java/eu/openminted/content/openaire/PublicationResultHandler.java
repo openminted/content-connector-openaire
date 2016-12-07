@@ -62,7 +62,7 @@ public class PublicationResultHandler extends DefaultHandler {
             /*
                 Set by default the document type to abstract until we find a solution to this
              */
-            publication.setDocumentType(DocumentTypeEnum.ABSTRACT);
+            publication.setDocumentType(DocumentTypeEnum.FULL_TEXT);
         }
         /*
             Title
@@ -182,7 +182,9 @@ public class PublicationResultHandler extends DefaultHandler {
             DocumentDistributionInfo (preparation for accessing the downloading URL)
          */
         else if (qName.equalsIgnoreCase("webresource")) {
-            documentDistributionInfo = new DocumentDistributionInfo();
+            if (documentDistributionInfo == null) {
+                documentDistributionInfo = new DocumentDistributionInfo();
+            }
         }
         /*
             Subjects and Keywords
@@ -204,20 +206,59 @@ public class PublicationResultHandler extends DefaultHandler {
             hasAbstract = true;
         }
         /*
-            Licence is still under investigation
-            As it looks like, licence is used within journals.
+            License is still under investigation
+            As it looks like, license is used within journals.
             This is an element not yet processed
          */
-        else if (qName.equalsIgnoreCase("bestlicence")) {
+        else if (qName.equalsIgnoreCase("bestlicense")) {
             String classid = attributes.getValue("classid");
             String classname = attributes.getValue("classname");
-            RightsInfo rightsInfo = new RightsInfo();
-            LicenceInfo licenceInfo = new LicenceInfo();
-            licenceInfo.setLicence(LicenceEnum.NON_STANDARD_LICENCE_TERMS);
-            licenceInfo.setNonStandardLicenceTermsURL(classid);
+//            RightsInfo rightsInfo = new RightsInfo();
+//            LicenceInfo licenceInfo = new LicenceInfo();
+//            licenceInfo.setLicence(LicenceEnum.NON_STANDARD_LICENCE_TERMS);
+//            licenceInfo.setNonStandardLicenceTermsURL(classid);
 
-            rightsInfo.getLicenceInfos().add(licenceInfo);
-            documentDistributionInfo.getRightsInfo().add(rightsInfo);
+//            RightsStatementInfo rightsStatementInfo = new RightsStatementInfo();
+//            rightsStatementInfo.setRightsStmtURL("http://api.openaire.eu/vocabularies/dnet:access_modes");
+//            rightsStatementInfo.setRightsStmtName(RightsStmtNameConverter.convert(classname));
+
+//            rightsInfo.getLicenceInfos().add(licenceInfo);
+//            rightsInfo.setRightsStatementInfo(rightsStatementInfo);
+
+//            if (documentDistributionInfo == null) {
+//                documentDistributionInfo = new DocumentDistributionInfo();
+//            }
+
+//            documentDistributionInfo.getRightsInfo().add(rightsInfo);
+        }
+        /*
+            Journal
+         */
+        else if (qName.equalsIgnoreCase("journal")) {
+            String eissn = attributes.getValue("eissn");
+            String issn = attributes.getValue("issn");
+            String lissn = attributes.getValue("lissn");
+
+            if (publication.getJournal() == null) {
+                publication.setJournal(new RelatedJournal());
+            }
+
+            if (eissn != null && !eissn.isEmpty()) {
+                JournalIdentifier journalIdentifier = new JournalIdentifier();
+                journalIdentifier.setValue(eissn);
+
+                publication.getJournal().getJournalIdentifiers().add(journalIdentifier);
+            }
+            if (issn != null && !issn.isEmpty()) {
+                JournalIdentifier journalIdentifier = new JournalIdentifier();
+                journalIdentifier.setValue(issn);
+                publication.getJournal().getJournalIdentifiers().add(journalIdentifier);
+            }
+            if (lissn != null && !lissn.isEmpty()) {
+                JournalIdentifier journalIdentifier = new JournalIdentifier();
+                journalIdentifier.setValue(lissn);
+                publication.getJournal().getJournalIdentifiers().add(journalIdentifier);
+            }
         }
     }
 
@@ -291,8 +332,7 @@ public class PublicationResultHandler extends DefaultHandler {
                 publication.getTitles().add(title);
                 value = "";
             }
-        }
-        else if (qName.equalsIgnoreCase("pid")) {
+        } else if (qName.equalsIgnoreCase("pid")) {
             publicationIdentifier.setValue(value);
             publication.getIdentifiers().add(publicationIdentifier);
             value = "";
@@ -317,6 +357,10 @@ public class PublicationResultHandler extends DefaultHandler {
         else if (qName.equalsIgnoreCase("fullname")) {
             PersonName personName = new PersonName();
             personName.setValue(value);
+            if (author == null) {
+                author = new RelatedPerson();
+            }
+
             author.getPersonNames().add(personName);
             value = "";
         }
@@ -451,6 +495,17 @@ public class PublicationResultHandler extends DefaultHandler {
                 contributor.setRelatedOrganization(relatedOrganization);
 
                 publication.getContributors().add(contributor);
+                value = "";
+            }
+        }
+        /*
+            Journal
+         */
+        else if (qName.equalsIgnoreCase("journal")) {
+            if (!value.trim().isEmpty()) {
+                JournalTitle journalTitle = new JournalTitle();
+                journalTitle.setValue(value);
+                publication.getJournal().getJournalTitles().add(journalTitle);
                 value = "";
             }
         }

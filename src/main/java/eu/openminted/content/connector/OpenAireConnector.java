@@ -27,6 +27,8 @@ import java.util.List;
 public class OpenAireConnector implements ContentConnector {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
     private String schemaAddress;
+    private final String FACET_FIELD_DOCUMENT_TYPE = "documenttype";
+    private final String FACET_FIELD_COUNT_FIELD_DOCUMENT_TYPE = "fullText";
 
     @Override
     public SearchResult search(Query query) {
@@ -43,22 +45,15 @@ public class OpenAireConnector implements ContentConnector {
             List<Facet> facets = new ArrayList<>();
             if (response.getFacetFields() != null) {
                 for (FacetField facetField : response.getFacetFields()) {
-                    Facet facet = new Facet();
-                    facet.setLabel(facetField.getName());
-                    facet.setField(facetField.getName());
-                    List<Value> values = new ArrayList<>();
-                    for (FacetField.Count count : facetField.getValues()) {
-                        Value value = new Value();
-                        value.setValue(count.getName());
-                        value.setCount((int) count.getCount());
-                        values.add(value);
-                    }
-                    facet.setValues(values);
+                    Facet facet = buildFacet(facetField);
                     facets.add(facet);
                 }
+                // Facet Field documenttype does not exist in OpenAIRE, so we added it explicitly
+                facets.add(buildFacet(FACET_FIELD_DOCUMENT_TYPE, FACET_FIELD_COUNT_FIELD_DOCUMENT_TYPE, searchResult.getTotalHits()));
             }
 
             searchResult.setFacets(facets);
+            searchResult.setPublications(new ArrayList<>());
 
             for (SolrDocument document : response.getResults()) {
                 // TODO: The getFieldName to get the result should be given as input
@@ -69,7 +64,7 @@ public class OpenAireConnector implements ContentConnector {
                 // TODO: xml validation for the initial queries is needed and yet the oaf xsd has issues
                 // leaving xml validation for as feature in future commit
 
-                String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + document.getFieldValue("__result").toString().replaceAll("\\[|\\]", "");
+                String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + document.getFieldValue("__result").toString().replaceAll("\\[|\\]", "");
 //                if (!schemaAddress.isEmpty()) {
 //                    Validator validator = createValidator(schemaAddress);
 //                    Source source = new StreamSource(xml);
@@ -86,7 +81,6 @@ public class OpenAireConnector implements ContentConnector {
 //                }
 
                 parser.parse(new InputSource(new StringReader(xml)));
-                searchResult.setPublications(new ArrayList<>());
                 searchResult.getPublications().add(parser.getOMTDPublication());
             }
         } catch (Exception e) {
@@ -135,5 +129,35 @@ public class OpenAireConnector implements ContentConnector {
 
     public void setSchemaAddress(String schemaAddress) {
         this.schemaAddress = schemaAddress;
+    }
+
+    private Facet buildFacet(FacetField facetField) {
+        Facet facet = new Facet();
+        facet.setLabel(facetField.getName());
+        facet.setField(facetField.getName());
+        List<Value> values = new ArrayList<>();
+        for (FacetField.Count count : facetField.getValues()) {
+            Value value = new Value();
+            value.setValue(count.getName());
+            value.setCount((int) count.getCount());
+            values.add(value);
+        }
+        facet.setValues(values);
+        return facet;
+    }
+
+    private Facet buildFacet(String name, String countName, int countValue) {
+        Facet facet = new Facet();
+        facet.setLabel(name);
+        facet.setField(name);
+
+        List<Value> values = new ArrayList<>();
+        Value value = new Value();
+        value.setValue(countName);
+        value.setCount(countValue);
+        values.add(value);
+
+        facet.setValues(values);
+        return facet;
     }
 }

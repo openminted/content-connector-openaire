@@ -1,6 +1,8 @@
 package eu.openminted.content.connector;
 
 import eu.openminted.registry.domain.DocumentMetadataRecord;
+import eu.openminted.registry.domain.Facet;
+import eu.openminted.registry.domain.Value;
 import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -17,18 +19,19 @@ public class OpenAireConnectorTest {
     public void search() throws Exception {
         Query query = new Query();
         query.setFrom(0);
-        query.setTo(1);
+        query.setTo(10);
         query.setParams(new HashMap<>());
         query.getParams().put("fl", new ArrayList<>());
         query.getParams().get("fl").add("__result");
+//        query.getParams().put("fq", new ArrayList<>());
+//        query.getParams().get("fq").add("__indexrecordidentifier:*00680ab21c76269e780f5e9e7e636619");
         query.getParams().put("sort", new ArrayList<>());
         query.getParams().get("sort").add("__indexrecordidentifier asc");
-
-
-        query.setFacets(new ArrayList<>());
         query.setKeyword("*:*");
+//        query.setFacets(new ArrayList<>());
+//        query.getFacets().add("instancetypename");
+
         OpenAireConnector openAireConnector = new OpenAireConnector();
-//        openAireConnector.setSchemaAddress("https://www.openaire.eu/schema/0.3/oaf-0.3.xsd");
         SearchResult searchResult = openAireConnector.search(query);
 
         if (searchResult.getPublications() != null) {
@@ -36,7 +39,13 @@ public class OpenAireConnectorTest {
                 System.out.println(metadataRecord);
             }
 
-            System.out.println(searchResult.getFacets());
+            for (Facet facet : searchResult.getFacets()) {
+                System.out.println("facet:{" + facet.getField() + "[");
+                for (Value value : facet.getValues()) {
+                    System.out.println("\t{" + value.getValue() + ":" + value.getCount() + "}");
+                }
+                System.out.println("]}");
+            }
             System.out.println("reading " + searchResult.getPublications().size() +
                     " publications from " + searchResult.getFrom() +
                     " to " + searchResult.getTo() +
@@ -57,6 +66,8 @@ public class OpenAireConnectorTest {
         query.getParams().put("sort", new ArrayList<>());
         query.getParams().get("sort").add("__indexrecordidentifier asc");
         query.setKeyword("*:*");
+        query.setFacets(new ArrayList<>());
+        query.getFacets().add("instancetypename");
 
         InputStream inputStream = openAireConnector.fetchMetadata(query);
         String line;
