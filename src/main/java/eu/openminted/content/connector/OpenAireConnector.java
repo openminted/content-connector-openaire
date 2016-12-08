@@ -2,6 +2,7 @@ package eu.openminted.content.connector;
 
 import eu.openminted.registry.domain.Facet;
 import eu.openminted.registry.domain.Value;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -33,6 +34,7 @@ public class OpenAireConnector implements ContentConnector {
     @Override
     public SearchResult search(Query query) {
         SearchResult searchResult = new SearchResult();
+        log.setLevel(Level.ALL);
 
         try {
             Parser parser = new Parser();

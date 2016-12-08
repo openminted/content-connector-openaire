@@ -27,6 +27,8 @@ public class PublicationResultHandler extends DefaultHandler {
     private Title title;
     private RelatedPerson author;
     private DocumentDistributionInfo documentDistributionInfo;
+    private RightsInfo rightsInfo;
+
     private String description = "";
     private String value = "";
     private boolean hasAuthor = false;
@@ -42,7 +44,7 @@ public class PublicationResultHandler extends DefaultHandler {
         JAXBContext jaxbContext = JAXBContext.newInstance(DocumentMetadataRecord.class);
         jaxbMarshaller = jaxbContext.createMarshaller();
         jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-        jaxbMarshaller.setProperty("com.sun.xml.bind.xmlDeclaration", false);
+//        jaxbMarshaller.setProperty("com.sun.xml.bind.xmlDeclaration", false);
     }
 
     @Override
@@ -59,6 +61,8 @@ public class PublicationResultHandler extends DefaultHandler {
             metadataHeaderInfo = new MetadataHeaderInfo();
             documentMetadataRecord.setMetadataHeaderInfo(metadataHeaderInfo);
             documentMetadataRecord.setDocument(document);
+            rightsInfo = new RightsInfo();
+
             /*
                 Set by default the document type to abstract until we find a solution to this
              */
@@ -120,18 +124,6 @@ public class PublicationResultHandler extends DefaultHandler {
             }
             publication.setPublicationType(publicationTypeEnum);
         }
-//        /*
-//            collectedfrom
-//         */
-//        else if (qName.equalsIgnoreCase("collectedfrom")) {
-//            String id = attributes.getValue("id");
-//            String name = attributes.getValue("name");
-//            publicationIdentifier = new PublicationIdentifier();
-//            if (!name.isEmpty())
-//                publicationIdentifier.setValue(name);
-//            else if (!id.isEmpty())
-//                publicationIdentifier.setValue(id);
-//        }
         /*
             PublicationIdentifierSchemeName & schemeURI (if necessary)
          */
@@ -182,9 +174,7 @@ public class PublicationResultHandler extends DefaultHandler {
             DocumentDistributionInfo (preparation for accessing the downloading URL)
          */
         else if (qName.equalsIgnoreCase("webresource")) {
-            if (documentDistributionInfo == null) {
-                documentDistributionInfo = new DocumentDistributionInfo();
-            }
+            documentDistributionInfo = new DocumentDistributionInfo();
         }
         /*
             Subjects and Keywords
@@ -213,23 +203,16 @@ public class PublicationResultHandler extends DefaultHandler {
         else if (qName.equalsIgnoreCase("bestlicense")) {
             String classid = attributes.getValue("classid");
             String classname = attributes.getValue("classname");
-//            RightsInfo rightsInfo = new RightsInfo();
-//            LicenceInfo licenceInfo = new LicenceInfo();
-//            licenceInfo.setLicence(LicenceEnum.NON_STANDARD_LICENCE_TERMS);
-//            licenceInfo.setNonStandardLicenceTermsURL(classid);
+            LicenceInfo licenceInfo = new LicenceInfo();
+            licenceInfo.setLicence(LicenceEnum.NON_STANDARD_LICENCE_TERMS);
+            licenceInfo.setNonStandardLicenceTermsURL(classid);
 
-//            RightsStatementInfo rightsStatementInfo = new RightsStatementInfo();
-//            rightsStatementInfo.setRightsStmtURL("http://api.openaire.eu/vocabularies/dnet:access_modes");
-//            rightsStatementInfo.setRightsStmtName(RightsStmtNameConverter.convert(classname));
+            RightsStatementInfo rightsStatementInfo = new RightsStatementInfo();
+            rightsStatementInfo.setRightsStmtURL("http://api.openaire.eu/vocabularies/dnet:access_modes");
+            rightsStatementInfo.setRightsStmtName(RightsStmtNameConverter.convert(classname));
 
-//            rightsInfo.getLicenceInfos().add(licenceInfo);
-//            rightsInfo.setRightsStatementInfo(rightsStatementInfo);
-
-//            if (documentDistributionInfo == null) {
-//                documentDistributionInfo = new DocumentDistributionInfo();
-//            }
-
-//            documentDistributionInfo.getRightsInfo().add(rightsInfo);
+            rightsInfo.getLicenceInfos().add(licenceInfo);
+            rightsInfo.setRightsStatementInfo(rightsStatementInfo);
         }
         /*
             Journal
@@ -246,7 +229,6 @@ public class PublicationResultHandler extends DefaultHandler {
             if (eissn != null && !eissn.isEmpty()) {
                 JournalIdentifier journalIdentifier = new JournalIdentifier();
                 journalIdentifier.setValue(eissn);
-
                 publication.getJournal().getJournalIdentifiers().add(journalIdentifier);
             }
             if (issn != null && !issn.isEmpty()) {
@@ -445,6 +427,8 @@ public class PublicationResultHandler extends DefaultHandler {
             // just in case there is none download url
             if (documentDistributionInfo.getDownloadURLs().size() < 1)
                 documentDistributionInfo.getDistributionMediums().add(DistributionMediumEnum.OTHER);
+
+            documentDistributionInfo.setRightsInfo(rightsInfo);
             publication.getDistributions().add(documentDistributionInfo);
         }
         /*

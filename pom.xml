@@ -13,12 +13,7 @@
         <dependency>
             <groupId>eu.openminted</groupId>
             <artifactId>content-connector-api</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.14</version>
+            <version>[0.0.1-SNAPSHOT, )</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -33,7 +28,7 @@
         <dependency>
             <groupId>eu.openminted</groupId>
             <artifactId>omtd-registry-api</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>[0.0.1-SNAPSHOT, )</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -54,6 +49,11 @@
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
             <version>6.3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.7.21</version>
         </dependency>
     </dependencies>
 
