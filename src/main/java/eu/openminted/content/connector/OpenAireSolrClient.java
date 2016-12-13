@@ -14,19 +14,15 @@ import java.util.List;
 
 class OpenAireSolrClient {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
-    private final String RESULT_TYPE_ID_FACET_FIELD = "resulttypeid";
-    private final String RESULT_TYPE_ID_FACET_QUERY = "resulttypeid:publication";
-    private final String DELETED_BY_INFERENCE_FACET_FIELD = "deletedbyinference";
-    private final String DELETED_BY_INFERENCE_FACET_QUERY = "deletedbyinference:false";
 
-    private final String hosts = "index1.t.hadoop.research-infrastructures.eu:9983," +
-            "index2.t.hadoop.research-infrastructures.eu:9983," +
-            "index3.t.hadoop.research-infrastructures.eu:9983";
     private final String defaultCollection = "DMF-index-openaire";
     private SolrClient solrClient;
     private final PipedOutputStream outputStream = new PipedOutputStream();
 
     OpenAireSolrClient() {
+        String hosts = "index1.t.hadoop.research-infrastructures.eu:9983," +
+                "index2.t.hadoop.research-infrastructures.eu:9983," +
+                "index3.t.hadoop.research-infrastructures.eu:9983";
         this.solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
     }
 
@@ -41,7 +37,6 @@ class OpenAireSolrClient {
         boolean done = false;
 
         try {
-            outputStream.write("<OMTDPublications>\n".getBytes());
             outputStream.flush();
             while (!done) {
                 solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
@@ -69,6 +64,10 @@ class OpenAireSolrClient {
     }
 
     private SolrQuery queryBuilder(Query query) {
+        String RESULT_TYPE_ID_FACET_FIELD = "resulttypeid";
+        String DELETED_BY_INFERENCE_FACET_FIELD = "deletedbyinference";
+        String RESULT_TYPE_ID_FACET_QUERY = "resulttypeid:publication";
+        String DELETED_BY_INFERENCE_FACET_QUERY = "deletedbyinference:false";
         int rows = 10;
         int start = 0;
 
@@ -137,7 +136,6 @@ class OpenAireSolrClient {
         }
 
         solrQuery.setQuery(query.getKeyword());
-        System.out.println(solrQuery);
 
         return solrQuery;
     }

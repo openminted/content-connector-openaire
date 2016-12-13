@@ -28,8 +28,10 @@ public class OpenAireConnectorTest {
         query.getParams().put("sort", new ArrayList<>());
         query.getParams().get("sort").add("__indexrecordidentifier asc");
         query.setKeyword("*:*");
-//        query.setFacets(new ArrayList<>());
-//        query.getFacets().add("instancetypename");
+        query.setFacets(new ArrayList<>());
+        query.getFacets().add("Licence");
+        query.getFacets().add("DocumentLanguage");
+        query.getFacets().add("PublicationType");
 
         OpenAireConnector openAireConnector = new OpenAireConnector();
         SearchResult searchResult = openAireConnector.search(query);
@@ -63,15 +65,21 @@ public class OpenAireConnectorTest {
         query.setParams(new HashMap<>());
         query.getParams().put("fl", new ArrayList<>());
         query.getParams().get("fl").add("__result");
+
+        query.getParams().put("fq", new ArrayList<>());
+        query.getParams().get("fq").add("__indexrecordidentifier:*00680ab21c76269e780f5e9e7e636619");
+
         query.getParams().put("sort", new ArrayList<>());
         query.getParams().get("sort").add("__indexrecordidentifier asc");
         query.setKeyword("*:*");
         query.setFacets(new ArrayList<>());
-        query.getFacets().add("instancetypename");
+        query.getFacets().add("Licence");
+        query.getFacets().add("DocumentLanguage");
+        query.getFacets().add("PublicationType");
 
         InputStream inputStream = openAireConnector.fetchMetadata(query);
         String line;
-        BufferedReader br  = new BufferedReader(new InputStreamReader(inputStream));
+        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
         while ((line = br.readLine()) != null) {
             System.out.println(line);
         }

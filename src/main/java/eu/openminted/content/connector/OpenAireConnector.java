@@ -2,7 +2,6 @@ package eu.openminted.content.connector;
 
 import eu.openminted.registry.domain.Facet;
 import eu.openminted.registry.domain.Value;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -21,23 +20,50 @@ import java.io.PipedInputStream;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Component
 public class OpenAireConnector implements ContentConnector {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
     private String schemaAddress;
-    private final String FACET_FIELD_DOCUMENT_TYPE = "documenttype";
-    private final String FACET_FIELD_COUNT_FIELD_DOCUMENT_TYPE = "fullText";
+
+    private Map<String, String> facetConverter = new HashMap<>();
+
+    OpenAireConnector() {
+        String PUBLICATION_TYPE = "publicationType";
+        String PUBLICATION_DATE = "publicationDate";
+        String PUBLISHER = "publisher";
+        String RIGHTS_STMT_NAME = "rightsStmtName";
+        String LICENCE = "licence";
+        String DOCUMENT_LANG = "documentLanguage";
+        String KEYWORD = "keyword";
+        String INSTANCE_TYPE_NAME = "instancetypename";
+        String RESULT_DATE_OF_ACCEPTENCE = "resultdateofacceptance";
+        String RESULT_RIGHTS = "resultrights";
+        String RESULT_LANG_NAME = "resultlanguagename";
+        String RESULT_TYPE_ID = "resulttypeid";
+
+        facetConverter.put(PUBLICATION_TYPE.toLowerCase(), INSTANCE_TYPE_NAME);
+        facetConverter.put(PUBLICATION_DATE.toLowerCase(), RESULT_DATE_OF_ACCEPTENCE);
+        facetConverter.put(RIGHTS_STMT_NAME.toLowerCase(), RESULT_RIGHTS);
+        facetConverter.put(LICENCE.toLowerCase(), RESULT_RIGHTS);
+        facetConverter.put(DOCUMENT_LANG.toLowerCase(), RESULT_LANG_NAME);
+
+        facetConverter.put(INSTANCE_TYPE_NAME.toLowerCase(), PUBLICATION_TYPE);
+        facetConverter.put(RESULT_DATE_OF_ACCEPTENCE.toLowerCase(), PUBLICATION_DATE);
+        facetConverter.put(RESULT_RIGHTS.toLowerCase(), LICENCE);
+        facetConverter.put(RESULT_LANG_NAME.toLowerCase(), DOCUMENT_LANG);
+    }
 
     @Override
     public SearchResult search(Query query) {
         SearchResult searchResult = new SearchResult();
-        log.setLevel(Level.ALL);
+        final String FACET_FIELD_DOCUMENT_TYPE = "documentType";
+        final String FACET_FIELD_COUNT_FIELD_DOCUMENT_TYPE = "fullText";
 
         try {
             Parser parser = new Parser();
+            facetConversion(query);
             OpenAireSolrClient client = new OpenAireSolrClient();
             QueryResponse response = client.query(query);
             searchResult.setFrom((int) response.getResults().getStart());
@@ -48,7 +74,8 @@ public class OpenAireConnector implements ContentConnector {
             if (response.getFacetFields() != null) {
                 for (FacetField facetField : response.getFacetFields()) {
                     Facet facet = buildFacet(facetField);
-                    facets.add(facet);
+                    if (facet != null)
+                        facets.add(facet);
                 }
                 // Facet Field documenttype does not exist in OpenAIRE, so we added it explicitly
                 facets.add(buildFacet(FACET_FIELD_DOCUMENT_TYPE, FACET_FIELD_COUNT_FIELD_DOCUMENT_TYPE, searchResult.getTotalHits()));
@@ -91,6 +118,20 @@ public class OpenAireConnector implements ContentConnector {
         return searchResult;
     }
 
+    private void facetConversion(Query query) {
+        List<String> facetsToAdd = new ArrayList<>();
+        if (query.getFacets() != null && query.getFacets().size() > 0) {
+            for (String facet : query.getFacets()) {
+                if (facet != null && !facet.isEmpty()) {
+                    if (facetConverter.containsKey(facet.toLowerCase())) {
+                        facetsToAdd.add(facetConverter.get(facet.toLowerCase()));
+                    }
+                }
+            }
+            query.setFacets(facetsToAdd);
+        }
+    }
+
     private Validator createValidator(String schemaFileUrl) throws MalformedURLException, SAXException {
         log.info("Waiting for XML Validator");
         URL schemaUrl = new URL(schemaFileUrl);
@@ -106,6 +147,7 @@ public class OpenAireConnector implements ContentConnector {
 
     @Override
     public InputStream fetchMetadata(Query query) {
+        facetConversion(query);
         OpenAireSolrClient client = new OpenAireSolrClient();
         PipedInputStream inputStream = new PipedInputStream();
         try {
@@ -113,6 +155,9 @@ public class OpenAireConnector implements ContentConnector {
                     client.fetchMetadata(query)).start();
 
             client.getPipedOutputStream().connect(inputStream);
+
+            client.getPipedOutputStream().write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".getBytes());
+            client.getPipedOutputStream().write("<OMTDPublications>\n".getBytes());
         } catch (IOException e) {
             log.error("OpenAireConnector.fetchMetadata", e);
         }
@@ -134,17 +179,20 @@ public class OpenAireConnector implements ContentConnector {
     }
 
     private Facet buildFacet(FacetField facetField) {
-        Facet facet = new Facet();
-        facet.setLabel(facetField.getName());
-        facet.setField(facetField.getName());
-        List<Value> values = new ArrayList<>();
-        for (FacetField.Count count : facetField.getValues()) {
-            Value value = new Value();
-            value.setValue(count.getName());
-            value.setCount((int) count.getCount());
-            values.add(value);
+        Facet facet = null;
+        if (facetConverter.containsKey(facetField.getName().toLowerCase())) {
+            facet = new Facet();
+            facet.setLabel(facetConverter.get(facetField.getName().toLowerCase()));
+            facet.setField(facetConverter.get(facetField.getName().toLowerCase()));
+            List<Value> values = new ArrayList<>();
+            for (FacetField.Count count : facetField.getValues()) {
+                Value value = new Value();
+                value.setValue(count.getName());
+                value.setCount((int) count.getCount());
+                values.add(value);
+            }
+            facet.setValues(values);
         }
-        facet.setValues(values);
         return facet;
     }
 

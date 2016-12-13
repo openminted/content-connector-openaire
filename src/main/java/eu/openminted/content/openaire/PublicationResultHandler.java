@@ -44,7 +44,7 @@ public class PublicationResultHandler extends DefaultHandler {
         JAXBContext jaxbContext = JAXBContext.newInstance(DocumentMetadataRecord.class);
         jaxbMarshaller = jaxbContext.createMarshaller();
         jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-//        jaxbMarshaller.setProperty("com.sun.xml.bind.xmlDeclaration", false);
+        jaxbMarshaller.setProperty("jaxb.fragment", true);
     }
 
     @Override
@@ -274,15 +274,29 @@ public class PublicationResultHandler extends DefaultHandler {
          */
         else if (qName.equalsIgnoreCase("dri:dateOfCollection")) {
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-            try {
-                java.util.Date date = simpleDateFormat.parse(value);
-                GregorianCalendar gregorianCalendar = new GregorianCalendar();
-                gregorianCalendar.setTime(date);
-                XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
-                metadataHeaderInfo.setMetadataCreationDate(xmlGregorianCalendar);
-                value = "";
-            } catch (ParseException | DatatypeConfigurationException e) {
-                e.printStackTrace();
+            if (!value.trim().isEmpty()) {
+                try {
+                    java.util.Date date = simpleDateFormat.parse(value);
+                    GregorianCalendar gregorianCalendar = new GregorianCalendar();
+                    gregorianCalendar.setTime(date);
+                    XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
+                    metadataHeaderInfo.setMetadataCreationDate(xmlGregorianCalendar);
+                    value = "";
+                } catch (ParseException | DatatypeConfigurationException e) {
+                    simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                    java.util.Date date;
+                    try {
+                        date = simpleDateFormat.parse(value);
+
+                        GregorianCalendar gregorianCalendar = new GregorianCalendar();
+                        gregorianCalendar.setTime(date);
+                        XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
+                        metadataHeaderInfo.setMetadataCreationDate(xmlGregorianCalendar);
+                        value = "";
+                    } catch (ParseException | DatatypeConfigurationException e1) {
+                        log.error("PublicationResultHandler.dateOfCollection", e1);
+                    }
+                }
             }
         }
         /*
@@ -291,15 +305,27 @@ public class PublicationResultHandler extends DefaultHandler {
          */
         else if (qName.equalsIgnoreCase("dri:dateOfTransformation")) {
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-            try {
-                java.util.Date date = simpleDateFormat.parse(value);
-                GregorianCalendar gregorianCalendar = new GregorianCalendar();
-                gregorianCalendar.setTime(date);
-                XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
-                metadataHeaderInfo.setMetadataLastDateUpdated(xmlGregorianCalendar);
-                value = "";
-            } catch (ParseException | DatatypeConfigurationException e) {
-                e.printStackTrace();
+            if (!value.trim().isEmpty()) {
+                try {
+                    java.util.Date date = simpleDateFormat.parse(value);
+                    GregorianCalendar gregorianCalendar = new GregorianCalendar();
+                    gregorianCalendar.setTime(date);
+                    XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
+                    metadataHeaderInfo.setMetadataLastDateUpdated(xmlGregorianCalendar);
+                    value = "";
+                } catch (ParseException | DatatypeConfigurationException e) {
+                    simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                    try {
+                        java.util.Date date = simpleDateFormat.parse(value);
+                        GregorianCalendar gregorianCalendar = new GregorianCalendar();
+                        gregorianCalendar.setTime(date);
+                        XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
+                        metadataHeaderInfo.setMetadataLastDateUpdated(xmlGregorianCalendar);
+                        value = "";
+                    } catch (ParseException | DatatypeConfigurationException e1) {
+                        log.error("PublicationResultHandler.dateOfTransformation", e1);
+                    }
+                }
             }
         }
         /*
