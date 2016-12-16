@@ -6,6 +6,7 @@ import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Component;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -23,13 +24,14 @@ import java.net.URL;
 import java.util.*;
 
 @Component
+@ComponentScan("eu.openminted.content")
 public class OpenAireConnector implements ContentConnector {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
     private String schemaAddress;
 
     private Map<String, String> facetConverter = new HashMap<>();
 
-    OpenAireConnector() {
+    public OpenAireConnector() {
         String PUBLICATION_TYPE = "publicationType";
         String PUBLICATION_DATE = "publicationDate";
         String PUBLISHER = "publisher";
@@ -66,6 +68,7 @@ public class OpenAireConnector implements ContentConnector {
             facetConversion(query);
             OpenAireSolrClient client = new OpenAireSolrClient();
             QueryResponse response = client.query(query);
+
             searchResult.setFrom((int) response.getResults().getStart());
             searchResult.setTo((int) response.getResults().getStart() + response.getResults().size());
             searchResult.setTotalHits((int) response.getResults().getNumFound());

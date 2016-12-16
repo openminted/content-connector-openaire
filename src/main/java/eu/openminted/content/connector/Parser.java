@@ -1,7 +1,6 @@
 package eu.openminted.content.connector;
 
 import eu.openminted.content.openaire.PublicationResultHandler;
-import org.apache.log4j.Logger;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 

@@ -15,23 +15,22 @@ import java.util.List;
 class OpenAireSolrClient {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
 
-    private final String defaultCollection = "DMF-index-openaire";
-    private SolrClient solrClient;
+    private final String defaultCollection = "TMF-index-openaire";
     private final PipedOutputStream outputStream = new PipedOutputStream();
-
-    OpenAireSolrClient() {
-        String hosts = "index1.t.hadoop.research-infrastructures.eu:9983," +
-                "index2.t.hadoop.research-infrastructures.eu:9983," +
-                "index3.t.hadoop.research-infrastructures.eu:9983";
-        this.solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
-    }
+    private final String hosts = "index1.t.hadoop.research-infrastructures.eu:9983," +
+            "index2.t.hadoop.research-infrastructures.eu:9983," +
+            "index3.t.hadoop.research-infrastructures.eu:9983";
 
     QueryResponse query(Query query) throws IOException, SolrServerException {
+        SolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
         SolrQuery solrQuery = queryBuilder(query);
-        return solrClient.query(defaultCollection, solrQuery);
+        QueryResponse queryResponse = solrClient.query(defaultCollection, solrQuery);
+        solrClient.close();
+        return queryResponse;
     }
 
     void fetchMetadata(Query query) {
+        SolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
         SolrQuery solrQuery = queryBuilder(query);
         String cursorMark = CursorMarkParams.CURSOR_MARK_START;
         boolean done = false;
@@ -50,6 +49,7 @@ class OpenAireSolrClient {
             }
             outputStream.write("</OMTDPublications>\n".getBytes());
             outputStream.flush();
+            solrClient.close();
         }
         catch (IOException | SolrServerException e) {
             log.error("OpenAireSolrClient.fetchMetadata", e);
