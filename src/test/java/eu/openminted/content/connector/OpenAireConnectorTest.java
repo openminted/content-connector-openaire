@@ -22,8 +22,8 @@ public class OpenAireConnectorTest {
         query.setFrom(0);
         query.setTo(10);
         query.setParams(new HashMap<>());
-        query.getParams().put("fl", new ArrayList<>());
-        query.getParams().get("fl").add("__result");
+//        query.getParams().put("fl", new ArrayList<>());
+//        query.getParams().get("fl").add("__result");
         query.getParams().put("fq", new ArrayList<>());
         query.getParams().get("fq").add("__indexrecordidentifier:*00680ab21c76269e780f5e9e7e636619");
         query.getParams().put("sort", new ArrayList<>());
@@ -68,8 +68,8 @@ public class OpenAireConnectorTest {
         OpenAireConnector openAireConnector = new OpenAireConnector();
         Query query = new Query();
         query.setParams(new HashMap<>());
-        query.getParams().put("fl", new ArrayList<>());
-        query.getParams().get("fl").add("__result");
+//        query.getParams().put("fl", new ArrayList<>());
+//        query.getParams().get("fl").add("__result");
 
         query.getParams().put("fq", new ArrayList<>());
         query.getParams().get("fq").add("__indexrecordidentifier:*00680ab21c76269e780f5e9e7e636619");

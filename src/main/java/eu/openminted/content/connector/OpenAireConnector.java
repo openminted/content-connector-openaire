@@ -65,7 +65,8 @@ public class OpenAireConnector implements ContentConnector {
 
         try {
             Parser parser = new Parser();
-            facetConversion(query);
+            buildFacets(query);
+            buildFields(query);
             OpenAireSolrClient client = new OpenAireSolrClient();
             QueryResponse response = client.query(query);
 
@@ -121,20 +122,6 @@ public class OpenAireConnector implements ContentConnector {
         return searchResult;
     }
 
-    private void facetConversion(Query query) {
-        List<String> facetsToAdd = new ArrayList<>();
-        if (query.getFacets() != null && query.getFacets().size() > 0) {
-            for (String facet : query.getFacets()) {
-                if (facet != null && !facet.isEmpty()) {
-                    if (facetConverter.containsKey(facet.toLowerCase())) {
-                        facetsToAdd.add(facetConverter.get(facet.toLowerCase()));
-                    }
-                }
-            }
-            query.setFacets(facetsToAdd);
-        }
-    }
-
     private Validator createValidator(String schemaFileUrl) throws MalformedURLException, SAXException {
         log.info("Waiting for XML Validator");
         URL schemaUrl = new URL(schemaFileUrl);
@@ -150,7 +137,8 @@ public class OpenAireConnector implements ContentConnector {
 
     @Override
     public InputStream fetchMetadata(Query query) {
-        facetConversion(query);
+        buildFacets(query);
+        buildFields(query);
         OpenAireSolrClient client = new OpenAireSolrClient();
         PipedInputStream inputStream = new PipedInputStream();
         try {
@@ -181,6 +169,11 @@ public class OpenAireConnector implements ContentConnector {
         this.schemaAddress = schemaAddress;
     }
 
+    /***
+     * Creates an individual OMTD Facet from an OpenAIRE FacetField of a SearchResult
+     * @param facetField the OpenAIRE FacetField of the SearchResult
+     * @return OMTD Facet
+     */
     private Facet buildFacet(FacetField facetField) {
         Facet facet = null;
         if (facetConverter.containsKey(facetField.getName().toLowerCase())) {
@@ -199,6 +192,13 @@ public class OpenAireConnector implements ContentConnector {
         return facet;
     }
 
+    /***
+     * Creates an individual OMTD Facet
+     * @param name facet's name
+     * @param countName count's name
+     * @param countValue count's value
+     * @return OMTD Facet
+     */
     private Facet buildFacet(String name, String countName, int countValue) {
         Facet facet = new Facet();
         facet.setLabel(name);
@@ -213,4 +213,36 @@ public class OpenAireConnector implements ContentConnector {
         facet.setValues(values);
         return facet;
     }
+
+    /***
+     * Converts OMTD facets to OpenAIRE facets suitable for
+     * @param query the query as inserted in Content-Connector-Service
+     */
+    private void buildFacets(Query query) {
+        List<String> facetsToAdd = new ArrayList<>();
+        if (query.getFacets() != null && query.getFacets().size() > 0) {
+            for (String facet : query.getFacets()) {
+                if (facet != null && !facet.isEmpty()) {
+                    if (facetConverter.containsKey(facet.toLowerCase())) {
+                        facetsToAdd.add(facetConverter.get(facet.toLowerCase()));
+                    }
+                }
+            }
+            query.setFacets(facetsToAdd);
+        }
+    }
+
+
+    private void buildFields(Query query) {
+        if (!query.getParams().containsKey("fl")) {
+            query.getParams().put("fl", new ArrayList<>());
+            query.getParams().get("fl").add("__result");
+        } else {
+            if (!query.getParams().get("fl").contains("__result")) {
+                query.getParams().get("fl").add("__result");
+            }
+        }
+    }
+
+
 }
