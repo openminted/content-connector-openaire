@@ -10,12 +10,13 @@ import org.apache.solr.common.params.CursorMarkParams;
 
 import java.io.IOException;
 import java.io.PipedOutputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 class OpenAireSolrClient {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
 
-    private final String defaultCollection = "TMF-index-openaire";
+    private final String defaultCollection = "DMF-index-openaire";
     private final PipedOutputStream outputStream = new PipedOutputStream();
     private final String hosts = "index1.t.hadoop.research-infrastructures.eu:9983," +
             "index2.t.hadoop.research-infrastructures.eu:9983," +
@@ -89,12 +90,10 @@ class OpenAireSolrClient {
              */
             if (!query.getFacets().contains(RESULT_TYPE_ID_FACET_FIELD)) {
                 query.getFacets().add(RESULT_TYPE_ID_FACET_FIELD);
-                solrQuery.addFacetField(RESULT_TYPE_ID_FACET_FIELD);
             }
 
             if (!query.getFacets().contains(DELETED_BY_INFERENCE_FACET_FIELD)) {
                 query.getFacets().add(DELETED_BY_INFERENCE_FACET_FIELD);
-                solrQuery.addFacetField(DELETED_BY_INFERENCE_FACET_FIELD);
             }
 
             if (query.getFacets().size() > 0) {
@@ -130,12 +129,16 @@ class OpenAireSolrClient {
                     }
                 } else {
                     List<String> vals = query.getParams().get(key);
-                    solrQuery.set(key, vals.toArray(new String[vals.size()]));
+                    for (String val : vals) {
+                        solrQuery.addFilterQuery(key + ":" + val);
+                    }
                 }
             }
         }
 
         solrQuery.setQuery(query.getKeyword());
+
+        System.out.println(solrQuery.toString());
 
         return solrQuery;
     }

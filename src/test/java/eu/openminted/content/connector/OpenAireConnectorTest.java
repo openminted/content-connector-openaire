@@ -25,11 +25,14 @@ public class OpenAireConnectorTest {
 //        query.getParams().get("fq").add("__indexrecordidentifier:*00680ab21c76269e780f5e9e7e636619");
         query.getParams().put("sort", new ArrayList<>());
         query.getParams().get("sort").add("__indexrecordidentifier asc");
-        query.setKeyword("*:*");
+        query.getParams().put("licence", new ArrayList<>());
+        query.getParams().get("licence").add("Open Access");
+        query.getParams().get("licence").add("Closed Access");
+        query.setKeyword("digital");
         query.setFacets(new ArrayList<>());
         query.getFacets().add("Licence");
-        query.getFacets().add("DocumentLanguage");
-        query.getFacets().add("PublicationType");
+//        query.getFacets().add("DocumentLanguage");
+//        query.getFacets().add("PublicationType");
 
         OpenAireConnector openAireConnector = new OpenAireConnector();
         SearchResult searchResult = openAireConnector.search(query);

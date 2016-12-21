@@ -65,6 +65,7 @@ public class OpenAireConnector implements ContentConnector {
 
         try {
             Parser parser = new Parser();
+            buildParams(query);
             buildFacets(query);
             buildFields(query);
             OpenAireSolrClient client = new OpenAireSolrClient();
@@ -137,6 +138,7 @@ public class OpenAireConnector implements ContentConnector {
 
     @Override
     public InputStream fetchMetadata(Query query) {
+        buildParams(query);
         buildFacets(query);
         buildFields(query);
         OpenAireSolrClient client = new OpenAireSolrClient();
@@ -232,6 +234,23 @@ public class OpenAireConnector implements ContentConnector {
         }
     }
 
+    /***
+     * Converts OMTD parameters to OpenAIRE parameters
+     * @param query the query as inserted in Content-Connector-Service
+     */
+    private void buildParams(Query query) {
+        Map<String, List<String>> openAireParams = new HashMap<>();
+        if (query.getParams() != null && query.getParams().size() > 0) {
+            for (String key : query.getParams().keySet()) {
+                if (facetConverter.containsKey(key.toLowerCase())) {
+                    openAireParams.put(facetConverter.get(key.toLowerCase()), new ArrayList<>(query.getParams().get(key)));
+                }
+            }
+
+            query.setParams(openAireParams);
+        }
+    }
+
 
     private void buildFields(Query query) {
         if (!query.getParams().containsKey("fl")) {
@@ -243,6 +262,4 @@ public class OpenAireConnector implements ContentConnector {
             }
         }
     }
-
-
 }
