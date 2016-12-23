@@ -1,5 +1,6 @@
 package eu.openminted.content.openaire;
 
+import eu.openminted.content.connector.LanguageConverter;
 import eu.openminted.registry.domain.*;
 import org.apache.log4j.Logger;
 import org.xml.sax.Attributes;
