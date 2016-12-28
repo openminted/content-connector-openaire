@@ -31,6 +31,7 @@ public class OpenAireConnectorTest {
         query.setKeyword("digital");
         query.setFacets(new ArrayList<>());
         query.getFacets().add("Licence");
+        query.getFacets().add("resulttypename");
 //        query.getFacets().add("DocumentLanguage");
 //        query.getFacets().add("PublicationType");
 

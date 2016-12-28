@@ -16,7 +16,7 @@ import java.util.List;
 class OpenAireSolrClient {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
 
-    private final String defaultCollection = "DMF-index-openaire";
+    private final String defaultCollection = "TMF-index-openaire";
     private final PipedOutputStream outputStream = new PipedOutputStream();
     private final String hosts = "index1.t.hadoop.research-infrastructures.eu:9983," +
             "index2.t.hadoop.research-infrastructures.eu:9983," +
@@ -65,10 +65,9 @@ class OpenAireSolrClient {
     }
 
     private SolrQuery queryBuilder(Query query) {
-        String RESULT_TYPE_ID_FACET_FIELD = "resulttypeid";
-        String DELETED_BY_INFERENCE_FACET_FIELD = "deletedbyinference";
-        String RESULT_TYPE_ID_FACET_QUERY = "resulttypeid:publication";
-        String DELETED_BY_INFERENCE_FACET_QUERY = "deletedbyinference:false";
+        String FILTER_QUERY_RESULT_TYPE_NAME = "resulttypename:publication";
+        String FILTER_QUERY_DELETED_BY_INFERENCE = "deletedbyinference:false";
+
         int rows = 10;
         int start = 0;
 
@@ -85,28 +84,8 @@ class OpenAireSolrClient {
         if (query.getFacets() != null) {
             solrQuery.setFacet(true);
 
-            /*
-                Facets resulttypeid and deletedbyinference should be inserted by default.
-             */
-            if (!query.getFacets().contains(RESULT_TYPE_ID_FACET_FIELD)) {
-                query.getFacets().add(RESULT_TYPE_ID_FACET_FIELD);
-            }
-
-            if (!query.getFacets().contains(DELETED_BY_INFERENCE_FACET_FIELD)) {
-                query.getFacets().add(DELETED_BY_INFERENCE_FACET_FIELD);
-            }
-
             if (query.getFacets().size() > 0) {
                 solrQuery.addFacetField(query.getFacets().toArray(new String[query.getFacets().size()]));
-
-                for (String facet : query.getFacets()) {
-                    if (facet.equalsIgnoreCase(RESULT_TYPE_ID_FACET_FIELD))
-                        solrQuery.addFacetQuery(RESULT_TYPE_ID_FACET_QUERY);
-                    else if (facet.equalsIgnoreCase(DELETED_BY_INFERENCE_FACET_FIELD))
-                        solrQuery.addFacetQuery(DELETED_BY_INFERENCE_FACET_QUERY);
-                    else
-                        solrQuery.addFacetQuery(facet);
-                }
             }
         }
 
@@ -135,6 +114,9 @@ class OpenAireSolrClient {
                 }
             }
         }
+
+        solrQuery.addFilterQuery(FILTER_QUERY_RESULT_TYPE_NAME);
+        solrQuery.addFilterQuery(FILTER_QUERY_DELETED_BY_INFERENCE);
 
         solrQuery.setQuery(query.getKeyword());
 

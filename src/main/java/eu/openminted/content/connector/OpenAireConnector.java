@@ -43,7 +43,6 @@ public class OpenAireConnector implements ContentConnector {
         String RESULT_DATE_OF_ACCEPTENCE = "resultdateofacceptance";
         String RESULT_RIGHTS = "resultrights";
         String RESULT_LANG_NAME = "resultlanguagename";
-        String RESULT_TYPE_ID = "resulttypeid";
 
         facetConverter.put(PUBLICATION_TYPE.toLowerCase(), INSTANCE_TYPE_NAME);
         facetConverter.put(PUBLICATION_DATE.toLowerCase(), RESULT_DATE_OF_ACCEPTENCE);
@@ -152,6 +151,7 @@ public class OpenAireConnector implements ContentConnector {
             client.getPipedOutputStream().write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".getBytes());
             client.getPipedOutputStream().write("<OMTDPublications>\n".getBytes());
         } catch (IOException e) {
+
             log.error("OpenAireConnector.fetchMetadata", e);
         }
 
