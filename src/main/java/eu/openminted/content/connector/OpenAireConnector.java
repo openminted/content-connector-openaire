@@ -29,7 +29,7 @@ public class OpenAireConnector implements ContentConnector {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
     private String schemaAddress;
 
-    private Map<String, String> facetConverter = new HashMap<>();
+    private Map<String, String> OmtdOpenAIREMap = new HashMap<>();
 
     public OpenAireConnector() {
         String PUBLICATION_TYPE = "publicationType";
@@ -44,20 +44,21 @@ public class OpenAireConnector implements ContentConnector {
         String RESULT_RIGHTS = "resultrights";
         String RESULT_LANG_NAME = "resultlanguagename";
 
-        facetConverter.put(PUBLICATION_TYPE.toLowerCase(), INSTANCE_TYPE_NAME);
-        facetConverter.put(PUBLICATION_DATE.toLowerCase(), RESULT_DATE_OF_ACCEPTENCE);
-        facetConverter.put(RIGHTS_STMT_NAME.toLowerCase(), RESULT_RIGHTS);
-        facetConverter.put(LICENCE.toLowerCase(), RESULT_RIGHTS);
-        facetConverter.put(DOCUMENT_LANG.toLowerCase(), RESULT_LANG_NAME);
+        OmtdOpenAIREMap.put(PUBLICATION_TYPE.toLowerCase(), INSTANCE_TYPE_NAME);
+        OmtdOpenAIREMap.put(PUBLICATION_DATE.toLowerCase(), RESULT_DATE_OF_ACCEPTENCE);
+        OmtdOpenAIREMap.put(RIGHTS_STMT_NAME.toLowerCase(), RESULT_RIGHTS);
+        OmtdOpenAIREMap.put(LICENCE.toLowerCase(), RESULT_RIGHTS);
+        OmtdOpenAIREMap.put(DOCUMENT_LANG.toLowerCase(), RESULT_LANG_NAME);
 
-        facetConverter.put(INSTANCE_TYPE_NAME.toLowerCase(), PUBLICATION_TYPE);
-        facetConverter.put(RESULT_DATE_OF_ACCEPTENCE.toLowerCase(), PUBLICATION_DATE);
-        facetConverter.put(RESULT_RIGHTS.toLowerCase(), LICENCE);
-        facetConverter.put(RESULT_LANG_NAME.toLowerCase(), DOCUMENT_LANG);
+        OmtdOpenAIREMap.put(INSTANCE_TYPE_NAME.toLowerCase(), PUBLICATION_TYPE);
+        OmtdOpenAIREMap.put(RESULT_DATE_OF_ACCEPTENCE.toLowerCase(), PUBLICATION_DATE);
+        OmtdOpenAIREMap.put(RESULT_RIGHTS.toLowerCase(), LICENCE);
+        OmtdOpenAIREMap.put(RESULT_LANG_NAME.toLowerCase(), DOCUMENT_LANG);
     }
 
     @Override
     public SearchResult search(Query query) {
+
         SearchResult searchResult = new SearchResult();
         final String FACET_FIELD_DOCUMENT_TYPE = "documentType";
         final String FACET_FIELD_COUNT_FIELD_DOCUMENT_TYPE = "fullText";
@@ -137,9 +138,12 @@ public class OpenAireConnector implements ContentConnector {
 
     @Override
     public InputStream fetchMetadata(Query query) {
+
         buildParams(query);
         buildFacets(query);
         buildFields(query);
+        buildSort(query);
+
         OpenAireSolrClient client = new OpenAireSolrClient();
         PipedInputStream inputStream = new PipedInputStream();
         try {
@@ -177,11 +181,12 @@ public class OpenAireConnector implements ContentConnector {
      * @return OMTD Facet
      */
     private Facet buildFacet(FacetField facetField) {
+
         Facet facet = null;
-        if (facetConverter.containsKey(facetField.getName().toLowerCase())) {
+        if (OmtdOpenAIREMap.containsKey(facetField.getName().toLowerCase())) {
             facet = new Facet();
-            facet.setLabel(facetConverter.get(facetField.getName().toLowerCase()));
-            facet.setField(facetConverter.get(facetField.getName().toLowerCase()));
+            facet.setLabel(OmtdOpenAIREMap.get(facetField.getName().toLowerCase()));
+            facet.setField(OmtdOpenAIREMap.get(facetField.getName().toLowerCase()));
             List<Value> values = new ArrayList<>();
             for (FacetField.Count count : facetField.getValues()) {
                 Value value = new Value();
@@ -221,12 +226,13 @@ public class OpenAireConnector implements ContentConnector {
      * @param query the query as inserted in Content-Connector-Service
      */
     private void buildFacets(Query query) {
+
         List<String> facetsToAdd = new ArrayList<>();
         if (query.getFacets() != null && query.getFacets().size() > 0) {
             for (String facet : query.getFacets()) {
                 if (facet != null && !facet.isEmpty()) {
-                    if (facetConverter.containsKey(facet.toLowerCase())) {
-                        facetsToAdd.add(facetConverter.get(facet.toLowerCase()));
+                    if (OmtdOpenAIREMap.containsKey(facet.toLowerCase())) {
+                        facetsToAdd.add(OmtdOpenAIREMap.get(facet.toLowerCase()));
                     }
                 }
             }
@@ -239,11 +245,12 @@ public class OpenAireConnector implements ContentConnector {
      * @param query the query as inserted in Content-Connector-Service
      */
     private void buildParams(Query query) {
+
         Map<String, List<String>> openAireParams = new HashMap<>();
         if (query.getParams() != null && query.getParams().size() > 0) {
             for (String key : query.getParams().keySet()) {
-                if (facetConverter.containsKey(key.toLowerCase())) {
-                    openAireParams.put(facetConverter.get(key.toLowerCase()), new ArrayList<>(query.getParams().get(key)));
+                if (OmtdOpenAIREMap.containsKey(key.toLowerCase())) {
+                    openAireParams.put(OmtdOpenAIREMap.get(key.toLowerCase()), new ArrayList<>(query.getParams().get(key)));
                 }
             }
 
@@ -251,14 +258,33 @@ public class OpenAireConnector implements ContentConnector {
         }
     }
 
-
+    /***
+     * Adds field parameter `fl` and adds necessary value `__result` for the OpenAIRE index query
+     * @param query the query as inserted in Content-Connector-Service
+     */
     private void buildFields(Query query) {
+
+        if (query.getParams() == null) query.setParams(new HashMap<>());
+
         if (!query.getParams().containsKey("fl")) {
             query.getParams().put("fl", new ArrayList<>());
             query.getParams().get("fl").add("__result");
         } else {
             if (!query.getParams().get("fl").contains("__result")) {
                 query.getParams().get("fl").add("__result");
+            }
+        }
+    }
+
+    private void buildSort(Query query) {
+
+        if (query.getParams() == null) query.setParams(new HashMap<>());
+        if (!query.getParams().containsKey("sort")) {
+            query.getParams().put("sort", new ArrayList<>());
+            query.getParams().get("sort").add("__indexrecordidentifier desc");
+        } else {
+            if (!query.getParams().get("sort").contains("__indexrecordidentifier desc")) {
+                query.getParams().get("sort").add("__indexrecordidentifier desc");
             }
         }
     }

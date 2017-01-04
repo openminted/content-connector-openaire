@@ -178,6 +178,9 @@ public class PublicationResultHandler extends DefaultHandler {
         else if (qName.equalsIgnoreCase("webresource")) {
             documentDistributionInfo = new DocumentDistributionInfo();
         }
+        else if (qName.equalsIgnoreCase("url")) {
+            documentDistributionInfo = new DocumentDistributionInfo();
+        }
         /*
             Subjects and Keywords
          */
