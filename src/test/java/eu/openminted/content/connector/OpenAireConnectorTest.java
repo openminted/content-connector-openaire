@@ -28,10 +28,15 @@ public class OpenAireConnectorTest {
         query.getParams().put("licence", new ArrayList<>());
         query.getParams().get("licence").add("Open Access");
         query.getParams().get("licence").add("Closed Access");
+        query.getParams().put("publicationYear", new ArrayList<>());
+        query.getParams().get("publicationYear").add("2010");
+        query.getParams().get("publicationYear").add("2011");
+        query.getParams().get("publicationYear").add("2012");
         query.setKeyword("digital");
         query.setFacets(new ArrayList<>());
         query.getFacets().add("Licence");
         query.getFacets().add("resulttypename");
+        query.getFacets().add("publicationYear");
 //        query.getFacets().add("DocumentLanguage");
 //        query.getFacets().add("PublicationType");
 

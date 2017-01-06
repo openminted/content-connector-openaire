@@ -10,8 +10,11 @@ import org.apache.solr.common.params.CursorMarkParams;
 
 import java.io.IOException;
 import java.io.PipedOutputStream;
-import java.util.ArrayList;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 class OpenAireSolrClient {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
@@ -86,6 +89,15 @@ class OpenAireSolrClient {
 
             if (query.getFacets().size() > 0) {
                 solrQuery.addFacetField(query.getFacets().toArray(new String[query.getFacets().size()]));
+//                for (String facet : query.getFacets()) {
+//                    if (facet.toLowerCase().contains("year")
+//                            ||facet.toLowerCase().contains("date")) {
+//                        solrQuery.set("facet.range", facet);
+//                        solrQuery.set("f." + facet + ".facet.range.start", "2010-01-01T00:00:00.000Z");
+//                        solrQuery.set("f." + facet + ".facet.range.end", "NOW/YEAR");
+//                        solrQuery.set("f." + facet + ".facet.range.gap", "+1YEAR");
+//                    }
+//                }
             }
         }
 
@@ -108,8 +120,48 @@ class OpenAireSolrClient {
                     }
                 } else {
                     List<String> vals = query.getParams().get(key);
-                    for (String val : vals) {
-                        solrQuery.addFilterQuery(key + ":" + val);
+
+                    if (key.toLowerCase().contains("year") || key.toLowerCase().contains("date")) {
+                        SimpleDateFormat yearFormat = new SimpleDateFormat("YYYY");
+                        SimpleDateFormat queryDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+                        TimeZone UTC = TimeZone.getTimeZone("UTC");
+                        queryDateFormat.setTimeZone(UTC);
+                        String datetimeFieldQuery = "";
+                        for (String val : vals) {
+                            Date date;
+                            String queryDate;
+                            try {
+
+                                // try parse year with yearFormat "YYYY".
+                                // If it is successful add to the year the
+                                // rest datetime that is necessary for solr
+                                // to parse and parse it with the proper
+                                // queryDateFormat
+
+                                yearFormat.parse(val);
+                                val = val + "-01-01T00:00:00.000Z";
+
+                                date = queryDateFormat.parse(val);
+                                queryDate = queryDateFormat.format(date);
+                                datetimeFieldQuery += key + ":[" + queryDate + " TO " + queryDate +"+1YEAR] OR ";
+                            } catch (ParseException e) {
+                                try {
+                                    date = queryDateFormat.parse(val);
+                                    queryDate = queryDateFormat.format(date);
+                                    datetimeFieldQuery += key + ":[" + queryDate + " TO " + queryDate +"+1YEAR] OR ";
+                                } catch (ParseException e1) {
+                                    e1.printStackTrace();
+                                }
+                            }
+                        }
+                        datetimeFieldQuery = datetimeFieldQuery.replaceAll("OR $", "");
+                        solrQuery.addFilterQuery(datetimeFieldQuery);
+
+                    }
+                    else {
+                        for (String val : vals) {
+                            solrQuery.addFilterQuery(key + ":" + val);
+                        }
                     }
                 }
             }

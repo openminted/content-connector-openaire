@@ -33,7 +33,7 @@ public class OpenAireConnector implements ContentConnector {
 
     public OpenAireConnector() {
         String PUBLICATION_TYPE = "publicationType";
-        String PUBLICATION_DATE = "publicationDate";
+        String PUBLICATION_YEAR = "publicationYear";
         String PUBLISHER = "publisher";
         String RIGHTS_STMT_NAME = "rightsStmtName";
         String LICENCE = "licence";
@@ -45,13 +45,13 @@ public class OpenAireConnector implements ContentConnector {
         String RESULT_LANG_NAME = "resultlanguagename";
 
         OmtdOpenAIREMap.put(PUBLICATION_TYPE.toLowerCase(), INSTANCE_TYPE_NAME);
-        OmtdOpenAIREMap.put(PUBLICATION_DATE.toLowerCase(), RESULT_DATE_OF_ACCEPTENCE);
+        OmtdOpenAIREMap.put(PUBLICATION_YEAR.toLowerCase(), RESULT_DATE_OF_ACCEPTENCE);
         OmtdOpenAIREMap.put(RIGHTS_STMT_NAME.toLowerCase(), RESULT_RIGHTS);
         OmtdOpenAIREMap.put(LICENCE.toLowerCase(), RESULT_RIGHTS);
         OmtdOpenAIREMap.put(DOCUMENT_LANG.toLowerCase(), RESULT_LANG_NAME);
 
         OmtdOpenAIREMap.put(INSTANCE_TYPE_NAME.toLowerCase(), PUBLICATION_TYPE);
-        OmtdOpenAIREMap.put(RESULT_DATE_OF_ACCEPTENCE.toLowerCase(), PUBLICATION_DATE);
+        OmtdOpenAIREMap.put(RESULT_DATE_OF_ACCEPTENCE.toLowerCase(), PUBLICATION_YEAR);
         OmtdOpenAIREMap.put(RESULT_RIGHTS.toLowerCase(), LICENCE);
         OmtdOpenAIREMap.put(RESULT_LANG_NAME.toLowerCase(), DOCUMENT_LANG);
     }
