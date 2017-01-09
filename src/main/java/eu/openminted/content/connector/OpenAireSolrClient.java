@@ -159,9 +159,12 @@ class OpenAireSolrClient {
 
                     }
                     else {
+                        String fieldQuery = "";
                         for (String val : vals) {
-                            solrQuery.addFilterQuery(key + ":" + val);
+                            fieldQuery += key + ":" + val + " OR ";
                         }
+                        fieldQuery = fieldQuery.replaceAll("OR $", "");
+                        solrQuery.addFilterQuery(fieldQuery);
                     }
                 }
             }
