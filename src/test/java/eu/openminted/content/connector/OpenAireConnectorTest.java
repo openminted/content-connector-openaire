@@ -49,7 +49,7 @@ public class OpenAireConnectorTest {
             }
 
             for (Facet facet : searchResult.getFacets()) {
-                System.out.println("facet:{" + facet.getField() + "[");
+                System.out.println("facet:{" + facet.getLabel() + "[");
                 for (Value value : facet.getValues()) {
                     System.out.println("\t{" + value.getValue() + ":" + value.getCount() + "}");
                 }

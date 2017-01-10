@@ -30,6 +30,7 @@ public class OpenAireConnector implements ContentConnector {
     private String schemaAddress;
 
     private Map<String, String> OmtdOpenAIREMap = new HashMap<>();
+    private Map<String, String> OmtdFacetLabels = new HashMap<>();
 
     public OpenAireConnector() {
         String PUBLICATION_TYPE = "publicationType";
@@ -54,14 +55,21 @@ public class OpenAireConnector implements ContentConnector {
         OmtdOpenAIREMap.put(RESULT_DATE_OF_ACCEPTENCE.toLowerCase(), PUBLICATION_YEAR);
         OmtdOpenAIREMap.put(RESULT_RIGHTS.toLowerCase(), LICENCE);
         OmtdOpenAIREMap.put(RESULT_LANG_NAME.toLowerCase(), DOCUMENT_LANG);
+
+        OmtdFacetLabels.put(PUBLICATION_TYPE, "Publication Type");
+        OmtdFacetLabels.put(PUBLICATION_YEAR, "Publication Year");
+        OmtdFacetLabels.put(RIGHTS_STMT_NAME, "Rights Statement");
+        OmtdFacetLabels.put(LICENCE, "Licence");
+        OmtdFacetLabels.put(DOCUMENT_LANG, "Language");
     }
 
     @Override
     public SearchResult search(Query query) {
 
         SearchResult searchResult = new SearchResult();
-        final String FACET_FIELD_DOCUMENT_TYPE = "documentType";
-        final String FACET_FIELD_COUNT_FIELD_DOCUMENT_TYPE = "fullText";
+        final String FACET_DOCUMENT_TYPE_FIELD = "documentType";
+        final String FACET_DOCUMENT_TYPE_LABEL = "Document Type";
+        final String FACET_DOCUMENT_TYPE_COUNT_NAME = "fullText";
 
         try {
             Parser parser = new Parser();
@@ -83,7 +91,7 @@ public class OpenAireConnector implements ContentConnector {
                         facets.add(facet);
                 }
                 // Facet Field documenttype does not exist in OpenAIRE, so we added it explicitly
-                facets.add(buildFacet(FACET_FIELD_DOCUMENT_TYPE, FACET_FIELD_COUNT_FIELD_DOCUMENT_TYPE, searchResult.getTotalHits()));
+                facets.add(buildFacet(FACET_DOCUMENT_TYPE_FIELD, FACET_DOCUMENT_TYPE_LABEL, FACET_DOCUMENT_TYPE_COUNT_NAME, searchResult.getTotalHits()));
             }
 
             searchResult.setFacets(facets);
@@ -185,8 +193,9 @@ public class OpenAireConnector implements ContentConnector {
         Facet facet = null;
         if (OmtdOpenAIREMap.containsKey(facetField.getName().toLowerCase())) {
             facet = new Facet();
-            facet.setLabel(OmtdOpenAIREMap.get(facetField.getName().toLowerCase()));
-            facet.setField(OmtdOpenAIREMap.get(facetField.getName().toLowerCase()));
+            String field = OmtdOpenAIREMap.get(facetField.getName().toLowerCase());
+            facet.setField(field);
+            facet.setLabel(OmtdFacetLabels.get(field));
             List<Value> values = new ArrayList<>();
             for (FacetField.Count count : facetField.getValues()) {
                 Value value = new Value();
@@ -201,15 +210,15 @@ public class OpenAireConnector implements ContentConnector {
 
     /***
      * Creates an individual OMTD Facet
-     * @param name facet's name
+     * @param field facet's name
      * @param countName count's name
      * @param countValue count's value
      * @return OMTD Facet
      */
-    private Facet buildFacet(String name, String countName, int countValue) {
+    private Facet buildFacet(String field, String label, String countName, int countValue) {
         Facet facet = new Facet();
-        facet.setLabel(name);
-        facet.setField(name);
+        facet.setLabel(label);
+        facet.setField(field);
 
         List<Value> values = new ArrayList<>();
         Value value = new Value();
