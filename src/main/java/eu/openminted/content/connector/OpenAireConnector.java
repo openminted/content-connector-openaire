@@ -83,18 +83,23 @@ public class OpenAireConnector implements ContentConnector {
             searchResult.setTo((int) response.getResults().getStart() + response.getResults().size());
             searchResult.setTotalHits((int) response.getResults().getNumFound());
 
-            List<Facet> facets = new ArrayList<>();
+            Map<String, Facet> facets = new HashMap<>();
+
             if (response.getFacetFields() != null) {
                 for (FacetField facetField : response.getFacetFields()) {
                     Facet facet = buildFacet(facetField);
-                    if (facet != null)
-                        facets.add(facet);
+                    if (facet != null) {
+                        if (!facets.containsKey(facet.getField())) {
+                            facets.put(facet.getField(), facet);
+                        }
+                    }
                 }
                 // Facet Field documenttype does not exist in OpenAIRE, so we added it explicitly
-                facets.add(buildFacet(FACET_DOCUMENT_TYPE_FIELD, FACET_DOCUMENT_TYPE_LABEL, FACET_DOCUMENT_TYPE_COUNT_NAME, searchResult.getTotalHits()));
+                Facet documentTypeFacet = buildFacet(FACET_DOCUMENT_TYPE_FIELD, FACET_DOCUMENT_TYPE_LABEL, FACET_DOCUMENT_TYPE_COUNT_NAME, searchResult.getTotalHits());
+                facets.put(documentTypeFacet.getField(), documentTypeFacet);
             }
 
-            searchResult.setFacets(facets);
+            searchResult.setFacets(new ArrayList<>(facets.values()));
             searchResult.setPublications(new ArrayList<>());
 
             for (SolrDocument document : response.getResults()) {
@@ -155,7 +160,7 @@ public class OpenAireConnector implements ContentConnector {
         OpenAireSolrClient client = new OpenAireSolrClient();
         PipedInputStream inputStream = new PipedInputStream();
         try {
-            new Thread(()->
+            new Thread(() ->
                     client.fetchMetadata(query)).start();
 
             client.getPipedOutputStream().connect(inputStream);

@@ -25,6 +25,9 @@ class OpenAireSolrClient {
             "index2.t.hadoop.research-infrastructures.eu:9983," +
             "index3.t.hadoop.research-infrastructures.eu:9983";
 
+// Production URL
+// private final String hosts = "solr.openaire.eu:9983";
+
     QueryResponse query(Query query) throws IOException, SolrServerException {
         SolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
         SolrQuery solrQuery = queryBuilder(query);
@@ -154,7 +157,7 @@ class OpenAireSolrClient {
                                 }
                             }
                         }
-                        datetimeFieldQuery = datetimeFieldQuery.replaceAll("OR $", "");
+                        datetimeFieldQuery = datetimeFieldQuery.replaceAll(" OR $", "");
                         solrQuery.addFilterQuery(datetimeFieldQuery);
 
                     }
@@ -163,7 +166,7 @@ class OpenAireSolrClient {
                         for (String val : vals) {
                             fieldQuery += key + ":" + val + " OR ";
                         }
-                        fieldQuery = fieldQuery.replaceAll("OR $", "");
+                        fieldQuery = fieldQuery.replaceAll(" OR $", "");
                         solrQuery.addFilterQuery(fieldQuery);
                     }
                 }
