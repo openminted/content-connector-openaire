@@ -56,13 +56,13 @@ class OpenAireSolrClient {
             }
             outputStream.write("</OMTDPublications>\n".getBytes());
             outputStream.flush();
-            solrClient.close();
         }
         catch (IOException | SolrServerException e) {
             log.error("OpenAireSolrClient.fetchMetadata", e);
         }
         finally {
             try {
+                solrClient.close();
                 outputStream.close();
             } catch (IOException e) {
                 log.error("OpenAireSolrClient.fetchMetadata", e);

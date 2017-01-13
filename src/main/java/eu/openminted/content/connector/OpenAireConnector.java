@@ -170,6 +170,11 @@ public class OpenAireConnector implements ContentConnector {
         } catch (IOException e) {
 
             log.error("OpenAireConnector.fetchMetadata", e);
+            try {
+                inputStream.close();
+            } catch (IOException e1) {
+                log.error("OpenAireConnector.fetchMetadata", e1);
+            }
         }
 
         return inputStream;
