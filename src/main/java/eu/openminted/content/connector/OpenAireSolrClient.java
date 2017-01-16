@@ -21,12 +21,12 @@ class OpenAireSolrClient {
 
     private final String defaultCollection = "TMF-index-openaire";
     private final PipedOutputStream outputStream = new PipedOutputStream();
-    private final String hosts = "index1.t.hadoop.research-infrastructures.eu:9983," +
-            "index2.t.hadoop.research-infrastructures.eu:9983," +
-            "index3.t.hadoop.research-infrastructures.eu:9983";
+//    private final String hosts = "index1.t.hadoop.research-infrastructures.eu:9983," +
+//            "index2.t.hadoop.research-infrastructures.eu:9983," +
+//            "index3.t.hadoop.research-infrastructures.eu:9983";
 
-// Production URL
-// private final String hosts = "solr.openaire.eu:9983";
+    // Production URL
+    private final String hosts = "solr.openaire.eu:9983";
 
     QueryResponse query(Query query) throws IOException, SolrServerException {
         SolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
@@ -56,11 +56,9 @@ class OpenAireSolrClient {
             }
             outputStream.write("</OMTDPublications>\n".getBytes());
             outputStream.flush();
-        }
-        catch (IOException | SolrServerException e) {
+        } catch (IOException | SolrServerException e) {
             log.error("OpenAireSolrClient.fetchMetadata", e);
-        }
-        finally {
+        } finally {
             try {
                 solrClient.close();
                 outputStream.close();
@@ -146,12 +144,12 @@ class OpenAireSolrClient {
 
                                 date = queryDateFormat.parse(val);
                                 queryDate = queryDateFormat.format(date);
-                                datetimeFieldQuery += key + ":[" + queryDate + " TO " + queryDate +"+1YEAR] OR ";
+                                datetimeFieldQuery += key + ":[" + queryDate + " TO " + queryDate + "+1YEAR] OR ";
                             } catch (ParseException e) {
                                 try {
                                     date = queryDateFormat.parse(val);
                                     queryDate = queryDateFormat.format(date);
-                                    datetimeFieldQuery += key + ":[" + queryDate + " TO " + queryDate +"+1YEAR] OR ";
+                                    datetimeFieldQuery += key + ":[" + queryDate + " TO " + queryDate + "+1YEAR] OR ";
                                 } catch (ParseException e1) {
                                     e1.printStackTrace();
                                 }
@@ -160,8 +158,7 @@ class OpenAireSolrClient {
                         datetimeFieldQuery = datetimeFieldQuery.replaceAll(" OR $", "");
                         solrQuery.addFilterQuery(datetimeFieldQuery);
 
-                    }
-                    else {
+                    } else {
                         String fieldQuery = "";
                         for (String val : vals) {
                             fieldQuery += key + ":" + val + " OR ";
