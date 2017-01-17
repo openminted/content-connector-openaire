@@ -7,6 +7,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CursorMarkParams;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.PipedOutputStream;
@@ -16,17 +18,17 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
+@Component
 class OpenAireSolrClient {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
 
-    private final String defaultCollection = "TMF-index-openaire";
-    private final PipedOutputStream outputStream = new PipedOutputStream();
-//    private final String hosts = "index1.t.hadoop.research-infrastructures.eu:9983," +
-//            "index2.t.hadoop.research-infrastructures.eu:9983," +
-//            "index3.t.hadoop.research-infrastructures.eu:9983";
+    @Value("${default_collection}")
+    private String defaultCollection;
 
-    // Production URL
-    private final String hosts = "solr.openaire.eu:9983";
+    @Value("${hosts}")
+    private String hosts;
+
+    private final PipedOutputStream outputStream = new PipedOutputStream();
 
     QueryResponse query(Query query) throws IOException, SolrServerException {
         SolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
@@ -90,15 +92,6 @@ class OpenAireSolrClient {
 
             if (query.getFacets().size() > 0) {
                 solrQuery.addFacetField(query.getFacets().toArray(new String[query.getFacets().size()]));
-//                for (String facet : query.getFacets()) {
-//                    if (facet.toLowerCase().contains("year")
-//                            ||facet.toLowerCase().contains("date")) {
-//                        solrQuery.set("facet.range", facet);
-//                        solrQuery.set("f." + facet + ".facet.range.start", "2010-01-01T00:00:00.000Z");
-//                        solrQuery.set("f." + facet + ".facet.range.end", "NOW/YEAR");
-//                        solrQuery.set("f." + facet + ".facet.range.gap", "+1YEAR");
-//                    }
-//                }
             }
         }
 

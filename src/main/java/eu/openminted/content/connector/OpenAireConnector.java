@@ -6,6 +6,7 @@ import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Component;
 import org.xml.sax.InputSource;
@@ -21,13 +22,19 @@ import java.io.PipedInputStream;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 @ComponentScan("eu.openminted.content")
 public class OpenAireConnector implements ContentConnector {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
     private String schemaAddress;
+
+    @Autowired
+    private OpenAireSolrClient solrClient;
 
     private Map<String, String> OmtdOpenAIREMap = new HashMap<>();
     private Map<String, String> OmtdFacetLabels = new HashMap<>();
@@ -76,8 +83,7 @@ public class OpenAireConnector implements ContentConnector {
             buildParams(query);
             buildFacets(query);
             buildFields(query);
-            OpenAireSolrClient client = new OpenAireSolrClient();
-            QueryResponse response = client.query(query);
+            QueryResponse response = solrClient.query(query);
 
             searchResult.setFrom((int) response.getResults().getStart());
             searchResult.setTo((int) response.getResults().getStart() + response.getResults().size());
@@ -112,21 +118,6 @@ public class OpenAireConnector implements ContentConnector {
                 // leaving xml validation for as feature in future commit
 
                 String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + document.getFieldValue("__result").toString().replaceAll("\\[|\\]", "");
-//                if (!schemaAddress.isEmpty()) {
-//                    Validator validator = createValidator(schemaAddress);
-//                    Source source = new StreamSource(xml);
-//                    try {
-//                        if (validator != null) {
-//                            validator.validate(source);
-//                            log.info(source.getSystemId() + " is valid");
-//                        }
-//                    } catch (SAXException e) {
-//                        log.error(source.getSystemId() + " is NOT valid");
-//                        log.error("Reason: " + e.getLocalizedMessage());
-//                        continue;
-//                    }
-//                }
-
                 parser.parse(new InputSource(new StringReader(xml)));
                 searchResult.getPublications().add(parser.getOMTDPublication());
             }
@@ -157,16 +148,15 @@ public class OpenAireConnector implements ContentConnector {
         buildFields(query);
         buildSort(query);
 
-        OpenAireSolrClient client = new OpenAireSolrClient();
         PipedInputStream inputStream = new PipedInputStream();
         try {
             new Thread(() ->
-                    client.fetchMetadata(query)).start();
+                    solrClient.fetchMetadata(query)).start();
 
-            client.getPipedOutputStream().connect(inputStream);
+            solrClient.getPipedOutputStream().connect(inputStream);
 
-            client.getPipedOutputStream().write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".getBytes());
-            client.getPipedOutputStream().write("<OMTDPublications>\n".getBytes());
+            solrClient.getPipedOutputStream().write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".getBytes());
+            solrClient.getPipedOutputStream().write("<OMTDPublications>\n".getBytes());
         } catch (IOException e) {
 
             log.error("OpenAireConnector.fetchMetadata", e);
