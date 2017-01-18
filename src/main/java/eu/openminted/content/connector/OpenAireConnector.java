@@ -148,15 +148,19 @@ public class OpenAireConnector implements ContentConnector {
         buildFields(query);
         buildSort(query);
 
+        OpenAireSolrClient client = new OpenAireSolrClient();
+        client.setDefaultCollection(solrClient.getDefaultCollection());
+        client.setHosts(solrClient.getHosts());
+
         PipedInputStream inputStream = new PipedInputStream();
         try {
             new Thread(() ->
-                    solrClient.fetchMetadata(query)).start();
+                    client.fetchMetadata(query)).start();
 
-            solrClient.getPipedOutputStream().connect(inputStream);
+            client.getPipedOutputStream().connect(inputStream);
 
-            solrClient.getPipedOutputStream().write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".getBytes());
-            solrClient.getPipedOutputStream().write("<OMTDPublications>\n".getBytes());
+            client.getPipedOutputStream().write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".getBytes());
+            client.getPipedOutputStream().write("<OMTDPublications>\n".getBytes());
         } catch (IOException e) {
 
             log.error("OpenAireConnector.fetchMetadata", e);

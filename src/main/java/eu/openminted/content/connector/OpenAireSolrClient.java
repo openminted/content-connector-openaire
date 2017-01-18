@@ -176,4 +176,20 @@ class OpenAireSolrClient {
     PipedOutputStream getPipedOutputStream() {
         return outputStream;
     }
+
+    public String getDefaultCollection() {
+        return defaultCollection;
+    }
+
+    public void setDefaultCollection(String defaultCollection) {
+        this.defaultCollection = defaultCollection;
+    }
+
+    public String getHosts() {
+        return hosts;
+    }
+
+    public void setHosts(String hosts) {
+        this.hosts = hosts;
+    }
 }
