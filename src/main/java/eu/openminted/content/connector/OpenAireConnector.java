@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("WeakerAccess")
 @Component
 @ComponentScan("eu.openminted.content")
 public class OpenAireConnector implements ContentConnector {
@@ -137,7 +138,9 @@ public class OpenAireConnector implements ContentConnector {
 
     @Override
     public InputStream downloadFullText(String s) {
-        return null;
+        String identifier = s.replace(":", "\\:");
+        Query query = new Query("__indexrecordidentifier:" +identifier, new HashMap<>(), new ArrayList<>(), 0, 1);
+        return fetchMetadata(query);
     }
 
     @Override

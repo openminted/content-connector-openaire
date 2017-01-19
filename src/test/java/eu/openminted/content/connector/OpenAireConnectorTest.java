@@ -1,15 +1,27 @@
 package eu.openminted.content.connector;
 
+import eu.openminted.content.ConnectorConfiguration;
 import eu.openminted.registry.domain.Facet;
 import eu.openminted.registry.domain.Value;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.*;
 import java.util.*;
 
-
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(classes = {ConnectorConfiguration.class})
 public class OpenAireConnectorTest {
+
+    @Autowired
+    private OpenAireConnector openAireConnector;
+
     @Test
     @Ignore
     public void search() throws Exception {
@@ -26,12 +38,11 @@ public class OpenAireConnectorTest {
         query.getParams().put("sort", new ArrayList<>());
         query.getParams().get("sort").add("__indexrecordidentifier asc");
         query.getParams().put("licence", new ArrayList<>());
-        query.getParams().get("licence").add("Open Access");
-        query.getParams().get("licence").add("Closed Access");
-        query.getParams().put("publicationYear", new ArrayList<>());
-        query.getParams().get("publicationYear").add("2010");
-        query.getParams().get("publicationYear").add("2011");
-        query.getParams().get("publicationYear").add("2012");
+        query.getParams().get("licence").add("Embargo");
+//        query.getParams().put("publicationYear", new ArrayList<>());
+//        query.getParams().get("publicationYear").add("2010");
+//        query.getParams().get("publicationYear").add("2011");
+//        query.getParams().get("publicationYear").add("2012");
         query.setKeyword("digital");
         query.setFacets(new ArrayList<>());
         query.getFacets().add("Licence");
@@ -40,7 +51,6 @@ public class OpenAireConnectorTest {
 //        query.getFacets().add("DocumentLanguage");
 //        query.getFacets().add("PublicationType");
 
-        OpenAireConnector openAireConnector = new OpenAireConnector();
         SearchResult searchResult = openAireConnector.search(query);
 
         if (searchResult.getPublications() != null) {

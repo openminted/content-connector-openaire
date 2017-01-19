@@ -18,6 +18,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
+@SuppressWarnings("WeakerAccess")
 @Component
 class OpenAireSolrClient {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
@@ -30,7 +31,7 @@ class OpenAireSolrClient {
 
     private final PipedOutputStream outputStream = new PipedOutputStream();
 
-    QueryResponse query(Query query) throws IOException, SolrServerException {
+    public QueryResponse query(Query query) throws IOException, SolrServerException {
         SolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
         SolrQuery solrQuery = queryBuilder(query);
         QueryResponse queryResponse = solrClient.query(defaultCollection, solrQuery);
@@ -168,7 +169,7 @@ class OpenAireSolrClient {
 
         solrQuery.setQuery(query.getKeyword());
 
-        System.out.println(solrQuery.toString());
+        log.info(solrQuery.toString());
 
         return solrQuery;
     }

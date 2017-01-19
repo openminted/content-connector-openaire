@@ -25,6 +25,7 @@ public class PublicationResultHandler extends DefaultHandler {
     private DocumentMetadataRecord documentMetadataRecord;
     private DocumentInfo publication;
     private MetadataHeaderInfo metadataHeaderInfo;
+    private MetadataIdentifier metadataIdentifier;
     private PublicationIdentifier publicationIdentifier;
     private Title title;
     private RelatedPerson author;
@@ -47,6 +48,17 @@ public class PublicationResultHandler extends DefaultHandler {
         jaxbMarshaller = jaxbContext.createMarshaller();
         jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
         jaxbMarshaller.setProperty("jaxb.fragment", true);
+
+        documentMetadataRecord = new DocumentMetadataRecord();
+        Document document = new Document();
+        publication = new DocumentInfo();
+        document.setPublication(publication);
+        metadataIdentifier = new MetadataIdentifier();
+        metadataHeaderInfo = new MetadataHeaderInfo();
+        metadataHeaderInfo.setMetadataRecordIdentifier(metadataIdentifier);
+        documentMetadataRecord.setMetadataHeaderInfo(metadataHeaderInfo);
+        documentMetadataRecord.setDocument(document);
+        rightsInfo = new RightsInfo();
     }
 
     @Override
@@ -56,19 +68,10 @@ public class PublicationResultHandler extends DefaultHandler {
             DocumentMetadataRecord
          */
         if (qName.equalsIgnoreCase("result")) {
-            documentMetadataRecord = new DocumentMetadataRecord();
-            Document document = new Document();
-            publication = new DocumentInfo();
-            document.setPublication(publication);
-            metadataHeaderInfo = new MetadataHeaderInfo();
-            documentMetadataRecord.setMetadataHeaderInfo(metadataHeaderInfo);
-            documentMetadataRecord.setDocument(document);
-            rightsInfo = new RightsInfo();
-
             /*
                 Set by default the document type to abstract until we find a solution to this
              */
-            publication.setDocumentType(DocumentTypeEnum.FULL_TEXT);
+            documentMetadataRecord.getDocument().getPublication().setDocumentType(DocumentTypeEnum.FULL_TEXT);
         }
         /*
             Title
@@ -268,9 +271,7 @@ public class PublicationResultHandler extends DefaultHandler {
             MetadataInfo
          */
         else if (qName.equalsIgnoreCase("dri:objIdentifier")) {
-            MetadataIdentifier metadataIdentifier = new MetadataIdentifier();
-            metadataIdentifier.setValue(value);
-            metadataHeaderInfo.setMetadataRecordIdentifier(metadataIdentifier);
+            documentMetadataRecord.getMetadataHeaderInfo().getMetadataRecordIdentifier().setValue(value);
             value = "";
         }
         /*
@@ -285,7 +286,7 @@ public class PublicationResultHandler extends DefaultHandler {
                     GregorianCalendar gregorianCalendar = new GregorianCalendar();
                     gregorianCalendar.setTime(date);
                     XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
-                    metadataHeaderInfo.setMetadataCreationDate(xmlGregorianCalendar);
+                    documentMetadataRecord.getMetadataHeaderInfo().setMetadataCreationDate(xmlGregorianCalendar);
                     value = "";
                 } catch (ParseException | DatatypeConfigurationException e) {
                     simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -296,7 +297,7 @@ public class PublicationResultHandler extends DefaultHandler {
                         GregorianCalendar gregorianCalendar = new GregorianCalendar();
                         gregorianCalendar.setTime(date);
                         XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
-                        metadataHeaderInfo.setMetadataCreationDate(xmlGregorianCalendar);
+                        documentMetadataRecord.getMetadataHeaderInfo().setMetadataCreationDate(xmlGregorianCalendar);
                         value = "";
                     } catch (ParseException | DatatypeConfigurationException e1) {
                         log.error("PublicationResultHandler.dateOfCollection", e1);
@@ -316,7 +317,7 @@ public class PublicationResultHandler extends DefaultHandler {
                     GregorianCalendar gregorianCalendar = new GregorianCalendar();
                     gregorianCalendar.setTime(date);
                     XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
-                    metadataHeaderInfo.setMetadataLastDateUpdated(xmlGregorianCalendar);
+                    documentMetadataRecord.getMetadataHeaderInfo().setMetadataLastDateUpdated(xmlGregorianCalendar);
                     value = "";
                 } catch (ParseException | DatatypeConfigurationException e) {
                     simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -325,7 +326,7 @@ public class PublicationResultHandler extends DefaultHandler {
                         GregorianCalendar gregorianCalendar = new GregorianCalendar();
                         gregorianCalendar.setTime(date);
                         XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
-                        metadataHeaderInfo.setMetadataLastDateUpdated(xmlGregorianCalendar);
+                        documentMetadataRecord.getMetadataHeaderInfo().setMetadataLastDateUpdated(xmlGregorianCalendar);
                         value = "";
                     } catch (ParseException | DatatypeConfigurationException e1) {
                         log.error("PublicationResultHandler.dateOfTransformation", e1);
