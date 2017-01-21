@@ -201,6 +201,7 @@ public class PublicationResultHandler extends DefaultHandler {
             Abstract
          */
         else if (qName.equalsIgnoreCase("description")) {
+            description = "";
             hasAbstract = true;
         }
         /*
@@ -399,25 +400,29 @@ public class PublicationResultHandler extends DefaultHandler {
                 Date date = new Date();
                 String[] dateOfAcceptance = value.split("-");
 
-                switch (dateOfAcceptance.length) {
-                    case 1:
-                        if (!dateOfAcceptance[0].trim().isEmpty())
-                            date.setYear(Integer.valueOf(dateOfAcceptance[0].trim()));
-                        break;
-                    case 2:
-                        date.setYear(Integer.valueOf(dateOfAcceptance[0]));
-                        date.setMonth(Integer.valueOf(dateOfAcceptance[1]));
-                        break;
-                    case 3:
-                        date.setYear(Integer.valueOf(dateOfAcceptance[0]));
-                        date.setMonth(Integer.valueOf(dateOfAcceptance[1]));
-                        date.setDay(Integer.valueOf(dateOfAcceptance[2]));
-                        break;
-                    default:
-                        break;
-                }
+                try {
+                    switch (dateOfAcceptance.length) {
+                        case 1:
+                            if (!dateOfAcceptance[0].trim().isEmpty())
+                                date.setYear(Integer.valueOf(dateOfAcceptance[0].trim()));
+                            break;
+                        case 2:
+                            date.setYear(Integer.valueOf(dateOfAcceptance[0]));
+                            date.setMonth(Integer.valueOf(dateOfAcceptance[1]));
+                            break;
+                        case 3:
+                            date.setYear(Integer.valueOf(dateOfAcceptance[0]));
+                            date.setMonth(Integer.valueOf(dateOfAcceptance[1]));
+                            date.setDay(Integer.valueOf(dateOfAcceptance[2]));
+                            break;
+                        default:
+                            break;
+                    }
 
-                publication.setPublicationDate(date);
+                    publication.setPublicationDate(date);
+                } catch (NumberFormatException ex) {
+                    log.error("Error parsing string:" + value);
+                }
                 value = "";
             }
         }

@@ -23,7 +23,7 @@ public class OpenAireConnectorTest {
     private OpenAireConnector openAireConnector;
 
     @Test
-    @Ignore
+//    @Ignore
     public void search() throws Exception {
         // The way this test is implemented it supposes all of the following parameters enabled.
         // To alter the query by a parameter or field or facet
@@ -33,12 +33,12 @@ public class OpenAireConnectorTest {
         query.setFrom(0);
         query.setTo(10);
         query.setParams(new HashMap<>());
-//        query.getParams().put("fq", new ArrayList<>());
-//        query.getParams().get("fq").add("__indexrecordidentifier:*00680ab21c76269e780f5e9e7e636619");
+        query.getParams().put("fq", new ArrayList<>());
+//        query.getParams().get("fq").add("__indexrecordidentifier:od_______165\\:\\:00000090f0a93f19f8fb17252976f1fb");
         query.getParams().put("sort", new ArrayList<>());
         query.getParams().get("sort").add("__indexrecordidentifier asc");
         query.getParams().put("licence", new ArrayList<>());
-        query.getParams().get("licence").add("Embargo");
+        query.getParams().get("licence").add("Open Access");
 //        query.getParams().put("publicationYear", new ArrayList<>());
 //        query.getParams().get("publicationYear").add("2010");
 //        query.getParams().get("publicationYear").add("2011");
@@ -97,6 +97,17 @@ public class OpenAireConnectorTest {
         query.getFacets().add("PublicationType");
 
         InputStream inputStream = openAireConnector.fetchMetadata(query);
+        String line;
+        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+        while ((line = br.readLine()) != null) {
+            System.out.println(line);
+        }
+        br.close();
+    }
+
+    @Test
+    public void downloadFullText() throws Exception {
+        InputStream inputStream = openAireConnector.downloadFullText("od_______165::00000090f0a93f19f8fb17252976f1fb");
         String line;
         BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
         while ((line = br.readLine()) != null) {

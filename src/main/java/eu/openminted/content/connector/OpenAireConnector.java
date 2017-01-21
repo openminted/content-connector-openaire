@@ -138,9 +138,13 @@ public class OpenAireConnector implements ContentConnector {
 
     @Override
     public InputStream downloadFullText(String s) {
-        String identifier = s.replace(":", "\\:");
-        Query query = new Query("__indexrecordidentifier:" +identifier, new HashMap<>(), new ArrayList<>(), 0, 1);
-        return fetchMetadata(query);
+        InputStream inputStream = null;
+        try {
+            inputStream = new URL("http://adonis.athenarc.gr/pdfs/" + s + ".pdf").openStream();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return inputStream;
     }
 
     @Override
