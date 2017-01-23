@@ -23,7 +23,7 @@ public class OpenAireConnectorTest {
     private OpenAireConnector openAireConnector;
 
     @Test
-//    @Ignore
+    @Ignore
     public void search() throws Exception {
         // The way this test is implemented it supposes all of the following parameters enabled.
         // To alter the query by a parameter or field or facet
@@ -106,6 +106,7 @@ public class OpenAireConnectorTest {
     }
 
     @Test
+    @Ignore
     public void downloadFullText() throws Exception {
         InputStream inputStream = openAireConnector.downloadFullText("od_______165::00000090f0a93f19f8fb17252976f1fb");
         String line;
