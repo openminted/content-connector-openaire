@@ -23,10 +23,10 @@ import java.util.TimeZone;
 class OpenAireSolrClient {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
 
-    @Value("${default_collection}")
+    @Value("${solr.default.collection}")
     private String defaultCollection;
 
-    @Value("${hosts}")
+    @Value("${solr.hosts}")
     private String hosts;
 
     private final PipedOutputStream outputStream = new PipedOutputStream();
