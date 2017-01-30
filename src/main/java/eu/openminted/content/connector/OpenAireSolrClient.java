@@ -23,8 +23,8 @@ import java.util.TimeZone;
 class OpenAireSolrClient {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
 
-    int rows = 10;
-    int start = 0;
+    private int rows = 10;
+    private int start = 0;
 
     @Value("${solr.default.collection}")
     private String defaultCollection;
