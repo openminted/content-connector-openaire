@@ -158,6 +158,7 @@ public class OpenAireConnector implements ContentConnector {
         OpenAireSolrClient client = new OpenAireSolrClient();
         client.setDefaultCollection(solrClient.getDefaultCollection());
         client.setHosts(solrClient.getHosts());
+        client.setQueryLimit(solrClient.getQueryLimit());
 
         PipedInputStream inputStream = new PipedInputStream();
         try {

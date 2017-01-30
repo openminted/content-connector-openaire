@@ -81,16 +81,15 @@ public class OpenAireConnectorTest {
         // To alter the query by a parameter or field or facet
         // feel free to comment or add anything
 
-        OpenAireConnector openAireConnector = new OpenAireConnector();
         Query query = new Query();
         query.setParams(new HashMap<>());
 
         query.getParams().put("fq", new ArrayList<>());
-        query.getParams().get("fq").add("__indexrecordidentifier:*00680ab21c76269e780f5e9e7e636619");
+        query.getParams().get("fq").add("licence:Embargo");
 
         query.getParams().put("sort", new ArrayList<>());
         query.getParams().get("sort").add("__indexrecordidentifier asc");
-        query.setKeyword("*:*");
+        query.setKeyword("digital");
         query.setFacets(new ArrayList<>());
         query.getFacets().add("Licence");
         query.getFacets().add("DocumentLanguage");

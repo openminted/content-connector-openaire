@@ -23,11 +23,17 @@ import java.util.TimeZone;
 class OpenAireSolrClient {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
 
+    int rows = 10;
+    int start = 0;
+
     @Value("${solr.default.collection}")
     private String defaultCollection;
 
     @Value("${solr.hosts}")
     private String hosts;
+
+    @Value("${solr.query.limit}")
+    private String queryLimit;
 
     private final PipedOutputStream outputStream = new PipedOutputStream();
 
@@ -44,13 +50,19 @@ class OpenAireSolrClient {
         SolrQuery solrQuery = queryBuilder(query);
         String cursorMark = CursorMarkParams.CURSOR_MARK_START;
         boolean done = false;
+        int limit = Integer.parseInt(queryLimit);
 
         try {
             outputStream.flush();
+            int count = 0;
             while (!done) {
                 solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
                 QueryResponse rsp = solrClient.queryAndStreamResponse(defaultCollection, solrQuery,
                         new OpenAireStreamingResponseCallback(outputStream, "__result"));
+
+                count += this.rows;
+                if (count >= limit) break;
+
                 String nextCursorMark = rsp.getNextCursorMark();
                 if (cursorMark.equals(nextCursorMark)) {
                     done = true;
@@ -75,18 +87,15 @@ class OpenAireSolrClient {
         String FILTER_QUERY_RESULT_TYPE_NAME = "resulttypename:publication";
         String FILTER_QUERY_DELETED_BY_INFERENCE = "deletedbyinference:false";
 
-        int rows = 10;
-        int start = 0;
-
         if (query.getFrom() > 0) {
-            start = query.getFrom();
+            this.start = query.getFrom();
         }
 
         if (query.getTo() > 0) {
-            rows = query.getTo() - start;
+            this.rows = query.getTo() - this.start;
         }
 
-        SolrQuery solrQuery = (new SolrQuery()).setStart(start).setRows(rows);
+        SolrQuery solrQuery = (new SolrQuery()).setStart(this.start).setRows(this.rows);
 
         if (query.getFacets() != null) {
             solrQuery.setFacet(true);
@@ -192,5 +201,13 @@ class OpenAireSolrClient {
 
     public void setHosts(String hosts) {
         this.hosts = hosts;
+    }
+
+    public String getQueryLimit() {
+        return queryLimit;
+    }
+
+    public void setQueryLimit(String queryLimit) {
+        this.queryLimit = queryLimit;
     }
 }
