@@ -7,13 +7,26 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.w3c.dom.Document;
 
-import java.io.*;
-import java.util.*;
+import javax.net.ssl.*;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
+import java.net.URL;
+import java.net.URLConnection;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {ConnectorConfiguration.class})
@@ -21,6 +34,9 @@ public class OpenAireConnectorTest {
 
     @Autowired
     private OpenAireConnector openAireConnector;
+
+    @org.springframework.beans.factory.annotation.Value("${services.openaire.getProfile}")
+    private String getProfileUrl;
 
     @Test
     @Ignore
@@ -114,5 +130,55 @@ public class OpenAireConnectorTest {
             System.out.println(line);
         }
         br.close();
+    }
+
+    @Test
+    @Ignore
+    public void indexConnectionTest() throws Exception {
+        InputStream inputStream;
+        URLConnection con;
+        URL url = new URL(getProfileUrl);
+        Authenticator.setDefault(new Authenticator() {
+
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication("admin", "driver".toCharArray());
+            }
+        });
+
+        try {
+            con = url.openConnection();
+            inputStream = con.getInputStream();
+        } catch (SSLHandshakeException e) {
+
+            // Create a trust manager that does not validate certificate chains
+            TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
+                public X509Certificate[] getAcceptedIssuers() {
+                    return null;
+                }
+
+                public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                }
+
+                public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                }
+            }};
+
+            // Install the all-trusting trust manager
+            SSLContext sc = SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, new SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+
+            con = url.openConnection();
+            inputStream = con.getInputStream();
+        }
+
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        XPath xpath = XPathFactory.newInstance().newXPath();
+
+        Document doc = dbf.newDocumentBuilder().parse(inputStream);
+        String value = (String) xpath.evaluate("//RESOURCE_PROFILE/BODY/CONFIGURATION/SERVICE_PROPERTIES/PROPERTY[@key=\"mdformat\"]/@value", doc, XPathConstants.STRING);
+
+        System.out.println(value.toUpperCase() + "-index-openaire");
     }
 }

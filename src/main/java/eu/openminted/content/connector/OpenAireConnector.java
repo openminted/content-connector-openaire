@@ -297,6 +297,10 @@ public class OpenAireConnector implements ContentConnector {
         }
     }
 
+    /***
+     * Adds sorting parameter for the query
+     * @param query the query as inserted in Content-Connector-Service
+     */
     private void buildSort(Query query) {
 
         if (query.getParams() == null) query.setParams(new HashMap<>());
