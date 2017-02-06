@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
+import javax.annotation.PostConstruct;
 import javax.net.ssl.*;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -32,9 +33,7 @@ import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.TimeZone;
+import java.util.*;
 
 @SuppressWarnings("WeakerAccess")
 @Component
@@ -44,7 +43,6 @@ class OpenAireSolrClient {
     private int rows = 10;
     private int start = 0;
 
-    @Value("${solr.default.collection}")
     private String defaultCollection;
 
     @Value("${services.openaire.getProfile}")
@@ -56,12 +54,28 @@ class OpenAireSolrClient {
     @Value("${solr.query.limit}")
     private String queryLimit;
 
+    @PostConstruct
+    public void init() {
+        // awaiting period is 10 minutes
+        final long period = (long)10*60*1000;
+
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                updateDefaultConnection();
+            }
+        };
+
+        Timer timer = new Timer(true);
+        timer.schedule(timerTask, 0, period);
+    }
+
     private final PipedOutputStream outputStream = new PipedOutputStream();
 
     public QueryResponse query(Query query) throws IOException, SolrServerException {
         SolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
         SolrQuery solrQuery = queryBuilder(query);
-        QueryResponse queryResponse = solrClient.query(getDefaultConnection(), solrQuery);
+        QueryResponse queryResponse = solrClient.query(defaultCollection, solrQuery);
         solrClient.close();
         return queryResponse;
     }
@@ -78,7 +92,7 @@ class OpenAireSolrClient {
             int count = 0;
             while (!done) {
                 solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
-                QueryResponse rsp = solrClient.queryAndStreamResponse(getDefaultConnection(), solrQuery,
+                QueryResponse rsp = solrClient.queryAndStreamResponse(defaultCollection, solrQuery,
                         new OpenAireStreamingResponseCallback(outputStream, "__result"));
 
                 count += this.rows;
@@ -204,10 +218,9 @@ class OpenAireSolrClient {
         return solrQuery;
     }
 
-    protected String getDefaultConnection() {
+    protected void updateDefaultConnection() {
         InputStream inputStream;
         URLConnection con;
-
         try {
             URL url = new URL(getProfileUrl);
             Authenticator.setDefault(new Authenticator() {
@@ -252,8 +265,9 @@ class OpenAireSolrClient {
             String value = (String) xpath.evaluate("//RESOURCE_PROFILE/BODY/CONFIGURATION/SERVICE_PROPERTIES/PROPERTY[@key=\"mdformat\"]/@value", doc, XPathConstants.STRING);
 
             if (value != null && !value.isEmpty())
-                return value.toUpperCase() + "-index-openaire";
+                defaultCollection = value.toUpperCase() + "-index-openaire";
 
+            log.info("Updating defaultCollection to '" + defaultCollection + "'");
         } catch (IOException e) {
 
             log.error("Error applying SSLContext - IOException", e);
@@ -273,7 +287,6 @@ class OpenAireSolrClient {
 
             log.error("Error parsing value - ParserConfigurationException", e);
         }
-        return defaultCollection;
     }
 
     PipedOutputStream getPipedOutputStream() {
