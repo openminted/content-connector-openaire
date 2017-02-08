@@ -267,7 +267,7 @@ class OpenAireSolrClient {
             if (value != null && !value.isEmpty())
                 defaultCollection = value.toUpperCase() + "-index-openaire";
 
-            log.info("Updating defaultCollection to '" + defaultCollection + "'");
+            log.debug("Updating defaultCollection to '" + defaultCollection + "'");
         } catch (IOException e) {
 
             log.error("Error applying SSLContext - IOException", e);

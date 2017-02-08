@@ -3,6 +3,7 @@ package eu.openminted.content.connector;
 import eu.openminted.content.ConnectorConfiguration;
 import eu.openminted.registry.domain.Facet;
 import eu.openminted.registry.domain.Value;
+import org.apache.log4j.Logger;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,6 +32,7 @@ import java.util.HashMap;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {ConnectorConfiguration.class})
 public class OpenAireConnectorTest {
+    private static Logger log = Logger.getLogger(OpenAireConnectorTest.class.getName());
 
     @Autowired
     private OpenAireConnector openAireConnector;
@@ -179,6 +181,6 @@ public class OpenAireConnectorTest {
         Document doc = dbf.newDocumentBuilder().parse(inputStream);
         String value = (String) xpath.evaluate("//RESOURCE_PROFILE/BODY/CONFIGURATION/SERVICE_PROPERTIES/PROPERTY[@key=\"mdformat\"]/@value", doc, XPathConstants.STRING);
 
-        System.out.println(value.toUpperCase() + "-index-openaire");
+        log.error(value.toUpperCase() + "-index-openaire");
     }
 }
