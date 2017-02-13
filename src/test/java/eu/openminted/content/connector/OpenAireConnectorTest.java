@@ -49,7 +49,7 @@ public class OpenAireConnectorTest {
 
         Query query = new Query();
         query.setFrom(0);
-        query.setTo(10);
+        query.setTo(1);
         query.setParams(new HashMap<>());
         query.getParams().put("fq", new ArrayList<>());
 //        query.getParams().get("fq").add("__indexrecordidentifier:od_______165\\:\\:00000090f0a93f19f8fb17252976f1fb");
@@ -68,6 +68,9 @@ public class OpenAireConnectorTest {
         query.getFacets().add("publicationYear");
 //        query.getFacets().add("DocumentLanguage");
 //        query.getFacets().add("PublicationType");
+
+        while(openAireConnector.getDefaultCollection() == null || openAireConnector.getDefaultCollection().isEmpty())
+            Thread.sleep(1000);
 
         SearchResult searchResult = openAireConnector.search(query);
 

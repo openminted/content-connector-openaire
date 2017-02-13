@@ -1,42 +1,21 @@
 package eu.openminted.content.connector;
 
 import org.apache.log4j.Logger;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CursorMarkParams;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
 
-import javax.annotation.PostConstruct;
-import javax.net.ssl.*;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PipedOutputStream;
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
-import java.net.URL;
-import java.net.URLConnection;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.TimeZone;
 
 @SuppressWarnings("WeakerAccess")
-@Component
 class OpenAireSolrClient {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
 
@@ -44,44 +23,31 @@ class OpenAireSolrClient {
     private int start = 0;
 
     private String defaultCollection;
-
-    @Value("${services.openaire.getProfile}")
-    private String getProfileUrl;
-
-    @Value("${solr.hosts}")
     private String hosts;
-
-    @Value("${solr.query.limit}")
     private String queryLimit;
-
-    @PostConstruct
-    public void init() {
-        // awaiting period is 10 minutes
-        final long period = (long)10*60*1000;
-
-        TimerTask timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                updateDefaultConnection();
-            }
-        };
-
-        Timer timer = new Timer(true);
-        timer.schedule(timerTask, 0, period);
-    }
-
     private final PipedOutputStream outputStream = new PipedOutputStream();
 
+    /***
+     * Search method for browsing metadata
+     * @param query the query as inserted in Content-Connector-Service
+     * @return QueryResponse with metadata and facets
+     */
     public QueryResponse query(Query query) throws IOException, SolrServerException {
-        SolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
+        CloudSolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
+
         SolrQuery solrQuery = queryBuilder(query);
         QueryResponse queryResponse = solrClient.query(defaultCollection, solrQuery);
         solrClient.close();
         return queryResponse;
     }
 
+    /***
+     * Method for downloading metadata where the query's criteria are applicable
+     * @param query the query as inserted in Content-Connector-Service
+     */
     void fetchMetadata(Query query) {
-        SolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
+        CloudSolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
+
         SolrQuery solrQuery = queryBuilder(query);
         String cursorMark = CursorMarkParams.CURSOR_MARK_START;
         boolean done = false;
@@ -118,6 +84,11 @@ class OpenAireSolrClient {
         }
     }
 
+    /***
+     * Converts the query to the equivalent SolrQuery
+     * @param query the query as inserted in Content-Connector-Service
+     * @return the SolrQuery that corresponds to input query.
+     */
     private SolrQuery queryBuilder(Query query) {
         String FILTER_QUERY_RESULT_TYPE_NAME = "resulttypename:publication";
         String FILTER_QUERY_DELETED_BY_INFERENCE = "deletedbyinference:false";
@@ -218,77 +189,10 @@ class OpenAireSolrClient {
         return solrQuery;
     }
 
-    protected void updateDefaultConnection() {
-        InputStream inputStream;
-        URLConnection con;
-        try {
-            URL url = new URL(getProfileUrl);
-            Authenticator.setDefault(new Authenticator() {
-
-                @Override
-                protected PasswordAuthentication getPasswordAuthentication() {
-                    return new PasswordAuthentication("admin", "driver".toCharArray());
-                }
-            });
-
-            try {
-                con = url.openConnection();
-                inputStream = con.getInputStream();
-            } catch (SSLHandshakeException e) {
-
-                // Create a trust manager that does not validate certificate chains
-                TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() {
-                        return null;
-                    }
-
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                    }
-
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                    }
-                }};
-
-                // Install the all-trusting trust manager
-                SSLContext sc = SSLContext.getInstance("SSL");
-                sc.init(null, trustAllCerts, new SecureRandom());
-                HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-                con = url.openConnection();
-                inputStream = con.getInputStream();
-            }
-
-
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            XPath xpath = XPathFactory.newInstance().newXPath();
-
-            Document doc = dbf.newDocumentBuilder().parse(inputStream);
-            String value = (String) xpath.evaluate("//RESOURCE_PROFILE/BODY/CONFIGURATION/SERVICE_PROPERTIES/PROPERTY[@key=\"mdformat\"]/@value", doc, XPathConstants.STRING);
-
-            if (value != null && !value.isEmpty())
-                defaultCollection = value.toUpperCase() + "-index-openaire";
-
-            log.debug("Updating defaultCollection to '" + defaultCollection + "'");
-        } catch (IOException e) {
-
-            log.error("Error applying SSLContext - IOException", e);
-        } catch (NoSuchAlgorithmException e) {
-
-            log.error("Error applying SSLContext - NoSuchAlgorithmException", e);
-        } catch (KeyManagementException e) {
-
-            log.error("Error applying SSLContext - KeyManagementException", e);
-        } catch (SAXException e) {
-
-            log.error("Error parsing value - SAXException", e);
-        } catch (XPathExpressionException e) {
-
-            log.error("Error parsing value - XPathExpressionException", e);
-        } catch (ParserConfigurationException e) {
-
-            log.error("Error parsing value - ParserConfigurationException", e);
-        }
-    }
-
+    /***
+     * Returns the PipedOutputStream that is used to transfer metadata from the fetchMetadata method
+     * @return the metadata through the PipedOutputStream
+     */
     PipedOutputStream getPipedOutputStream() {
         return outputStream;
     }

@@ -6,36 +6,48 @@ import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Component;
+import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import javax.xml.XMLConstants;
-import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
-import javax.xml.validation.Validator;
+import javax.annotation.PostConstruct;
+import javax.net.ssl.*;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.StringReader;
-import java.net.MalformedURLException;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.net.URLConnection;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+import java.util.*;
 
 @SuppressWarnings("WeakerAccess")
 @Component
-@ComponentScan("eu.openminted.content")
 public class OpenAireConnector implements ContentConnector {
     private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
     private String schemaAddress;
+    private String defaultCollection;
 
-    @Autowired
-    private OpenAireSolrClient solrClient;
+    @org.springframework.beans.factory.annotation.Value("${services.openaire.getProfile}")
+    private String getProfileUrl;
+
+    @org.springframework.beans.factory.annotation.Value("${solr.hosts}")
+    private String hosts;
+
+    @org.springframework.beans.factory.annotation.Value("${solr.query.limit}")
+    private String queryLimit;
 
     private Map<String, String> OmtdOpenAIREMap = new HashMap<>();
     private Map<String, String> OmtdFacetLabels = new HashMap<>();
@@ -71,6 +83,35 @@ public class OpenAireConnector implements ContentConnector {
         OmtdFacetLabels.put(DOCUMENT_LANG, "Language");
     }
 
+    /***
+     * Spring initialization method.
+     * Start timer to update defaultConnection. Time period is set to 10 minutes.
+     */
+    @PostConstruct
+    public void init() {
+        // awaiting period is 10 minutes
+        final long period = (long) 10 * 60 * 1000;
+
+        System.out.println(getProfileUrl);
+        System.out.println(hosts);
+        System.out.println(queryLimit);
+
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                updateDefaultConnection();
+            }
+        };
+
+        Timer timer = new Timer(true);
+        timer.schedule(timerTask, 0, period);
+    }
+
+    /***
+     * Search method for browsing metadata
+     * @param query the query as inserted in Content-Connector-Service
+     * @return SearchResult with metadata and facets
+     */
     @Override
     public SearchResult search(Query query) {
 
@@ -84,6 +125,12 @@ public class OpenAireConnector implements ContentConnector {
             buildParams(query);
             buildFacets(query);
             buildFields(query);
+
+            OpenAireSolrClient solrClient = new OpenAireSolrClient();
+            solrClient.setHosts(hosts);
+            solrClient.setQueryLimit(queryLimit);
+            solrClient.setDefaultCollection(defaultCollection);
+
             QueryResponse response = solrClient.query(query);
 
             searchResult.setFrom((int) response.getResults().getStart());
@@ -128,25 +175,27 @@ public class OpenAireConnector implements ContentConnector {
         return searchResult;
     }
 
-    private Validator createValidator(String schemaFileUrl) throws MalformedURLException, SAXException {
-        log.info("Waiting for XML Validator");
-        URL schemaUrl = new URL(schemaFileUrl);
-        SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-        Schema schema = schemaFactory.newSchema(schemaUrl);
-        return schema.newValidator();
-    }
-
+    /***
+     * Method for downloading fullText linked pdf
+     * @param s the ID of the metadata
+     * @return the pdf in the form of InputStream
+     */
     @Override
     public InputStream downloadFullText(String s) {
         InputStream inputStream = null;
         try {
             inputStream = new URL("http://adonis.athenarc.gr/pdfs/" + s + ".pdf").openStream();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.debug("PDF for " + s + " is unavailable...");
         }
         return inputStream;
     }
 
+    /***
+     * Method for downloading metadata where the query's criteria are applicable
+     * @param query the query as inserted in Content-Connector-Service
+     * @return The metadata in the form of InputStream
+     */
     @Override
     public InputStream fetchMetadata(Query query) {
 
@@ -156,9 +205,9 @@ public class OpenAireConnector implements ContentConnector {
         buildSort(query);
 
         OpenAireSolrClient client = new OpenAireSolrClient();
-        client.setDefaultCollection(solrClient.getDefaultCollection());
-        client.setHosts(solrClient.getHosts());
-        client.setQueryLimit(solrClient.getQueryLimit());
+        client.setDefaultCollection(defaultCollection);
+        client.setHosts(hosts);
+        client.setQueryLimit(queryLimit);
 
         PipedInputStream inputStream = new PipedInputStream();
         try {
@@ -182,6 +231,10 @@ public class OpenAireConnector implements ContentConnector {
         return inputStream;
     }
 
+    /***
+     * Method that returns the name of the connector
+     * @return OpenAIRE
+     */
     @Override
     public String getSourceName() {
         return "OpenAIRE";
@@ -193,6 +246,14 @@ public class OpenAireConnector implements ContentConnector {
 
     public void setSchemaAddress(String schemaAddress) {
         this.schemaAddress = schemaAddress;
+    }
+
+    public String getDefaultCollection() {
+        return defaultCollection;
+    }
+
+    public void setDefaultCollection(String defaultCollection) {
+        this.defaultCollection = defaultCollection;
     }
 
     /***
@@ -311,6 +372,80 @@ public class OpenAireConnector implements ContentConnector {
             if (!query.getParams().get("sort").contains("__indexrecordidentifier desc")) {
                 query.getParams().get("sort").add("__indexrecordidentifier desc");
             }
+        }
+    }
+
+    /***
+     * Updates defaultConnection by querying services.openaire.eu
+     */
+    protected void updateDefaultConnection() {
+        InputStream inputStream;
+        URLConnection con;
+        try {
+            URL url = new URL(getProfileUrl);
+            Authenticator.setDefault(new Authenticator() {
+
+                @Override
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication("admin", "driver".toCharArray());
+                }
+            });
+
+            try {
+                con = url.openConnection();
+                inputStream = con.getInputStream();
+            } catch (SSLHandshakeException e) {
+
+                // Create a trust manager that does not validate certificate chains
+                TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return null;
+                    }
+
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                    }
+
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                    }
+                }};
+
+                // Install the all-trusting trust manager
+                SSLContext sc = SSLContext.getInstance("SSL");
+                sc.init(null, trustAllCerts, new SecureRandom());
+                HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+                con = url.openConnection();
+                inputStream = con.getInputStream();
+            }
+
+
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            XPath xpath = XPathFactory.newInstance().newXPath();
+
+            Document doc = dbf.newDocumentBuilder().parse(inputStream);
+            String value = (String) xpath.evaluate("//RESOURCE_PROFILE/BODY/CONFIGURATION/SERVICE_PROPERTIES/PROPERTY[@key=\"mdformat\"]/@value", doc, XPathConstants.STRING);
+
+            if (value != null && !value.isEmpty())
+                defaultCollection = value.toUpperCase() + "-index-openaire";
+
+            log.debug("Updating defaultCollection to '" + defaultCollection + "'");
+        } catch (IOException e) {
+
+            log.error("Error applying SSLContext - IOException", e);
+        } catch (NoSuchAlgorithmException e) {
+
+            log.error("Error applying SSLContext - NoSuchAlgorithmException", e);
+        } catch (KeyManagementException e) {
+
+            log.error("Error applying SSLContext - KeyManagementException", e);
+        } catch (SAXException e) {
+
+            log.error("Error parsing value - SAXException", e);
+        } catch (XPathExpressionException e) {
+
+            log.error("Error parsing value - XPathExpressionException", e);
+        } catch (ParserConfigurationException e) {
+
+            log.error("Error parsing value - ParserConfigurationException", e);
         }
     }
 }
