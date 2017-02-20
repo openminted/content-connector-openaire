@@ -223,6 +223,7 @@ public class OpenAireConnector implements ContentConnector {
             log.error("OpenAireConnector.fetchMetadata", e);
             try {
                 inputStream.close();
+                client.getPipedOutputStream().close();
             } catch (IOException e1) {
                 log.error("OpenAireConnector.fetchMetadata", e1);
             }
