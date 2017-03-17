@@ -1,5 +1,6 @@
-package eu.openminted.content.connector;
+package eu.openminted.content;
 
+import eu.openminted.content.openaire.Parser;
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.common.SolrDocument;
@@ -13,9 +14,9 @@ import java.io.PipedOutputStream;
 import java.io.StringReader;
 
 public class OpenAireStreamingResponseCallback extends StreamingResponseCallback {
-    private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
-    PipedOutputStream outputStream;
-    String outputField;
+    private static Logger log = Logger.getLogger(OpenAireContentConnector.class.getName());
+    private PipedOutputStream outputStream;
+    private String outputField;
 
     public OpenAireStreamingResponseCallback(PipedOutputStream out, String field) {
         outputStream = out;
@@ -32,8 +33,14 @@ public class OpenAireStreamingResponseCallback extends StreamingResponseCallback
             parser.parse(new InputSource(new StringReader(xml)));
             outputStream.write(parser.getOMTDPublication().getBytes());
             outputStream.flush();
-        } catch (IOException | SAXException | JAXBException | ParserConfigurationException e) {
+        } catch (SAXException | JAXBException | ParserConfigurationException e) {
             log.error("OpenAireStreamingResponseCallback.streamSolrDocument", e);
+        } catch (IOException e) {
+            try {
+                outputStream.close();
+            } catch (IOException e1) {
+                log.error("OpenAireStreamingResponseCallback.streamSolrDocument Inner exception!", e1);
+            }
         }
     }
 

@@ -1,6 +1,7 @@
 package eu.openminted.content.connector;
 
 import eu.openminted.content.ConnectorConfiguration;
+import eu.openminted.content.OpenAireContentConnector;
 import eu.openminted.registry.domain.Facet;
 import eu.openminted.registry.domain.Value;
 import org.apache.log4j.Logger;
@@ -31,11 +32,11 @@ import java.util.HashMap;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {ConnectorConfiguration.class})
-public class OpenAireConnectorTest {
-    private static Logger log = Logger.getLogger(OpenAireConnectorTest.class.getName());
+public class OpenAireContentConnectorTest {
+    private static Logger log = Logger.getLogger(OpenAireContentConnectorTest.class.getName());
 
     @Autowired
-    private OpenAireConnector openAireConnector;
+    private OpenAireContentConnector openAireContentConnector;
 
     @org.springframework.beans.factory.annotation.Value("${services.openaire.getProfile}")
     private String getProfileUrl;
@@ -69,10 +70,10 @@ public class OpenAireConnectorTest {
 //        query.getFacets().add("DocumentLanguage");
 //        query.getFacets().add("PublicationType");
 
-        while(openAireConnector.getDefaultCollection() == null || openAireConnector.getDefaultCollection().isEmpty())
+        while(openAireContentConnector.getDefaultCollection() == null || openAireContentConnector.getDefaultCollection().isEmpty())
             Thread.sleep(1000);
 
-        SearchResult searchResult = openAireConnector.search(query);
+        SearchResult searchResult = openAireContentConnector.search(query);
 
         if (searchResult.getPublications() != null) {
             for (String metadataRecord : searchResult.getPublications()) {
@@ -116,7 +117,7 @@ public class OpenAireConnectorTest {
         query.getFacets().add("DocumentLanguage");
         query.getFacets().add("PublicationType");
 
-        InputStream inputStream = openAireConnector.fetchMetadata(query);
+        InputStream inputStream = openAireContentConnector.fetchMetadata(query);
         String line;
         BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
         while ((line = br.readLine()) != null) {
@@ -128,7 +129,7 @@ public class OpenAireConnectorTest {
     @Test
     @Ignore
     public void downloadFullText() throws Exception {
-        InputStream inputStream = openAireConnector.downloadFullText("od_______165::00000090f0a93f19f8fb17252976f1fb");
+        InputStream inputStream = openAireContentConnector.downloadFullText("od_______165::00000090f0a93f19f8fb17252976f1fb");
         String line;
         BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
         while ((line = br.readLine()) != null) {

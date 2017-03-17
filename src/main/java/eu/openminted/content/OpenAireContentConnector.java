@@ -1,5 +1,9 @@
-package eu.openminted.content.connector;
+package eu.openminted.content;
 
+import eu.openminted.content.connector.ContentConnector;
+import eu.openminted.content.connector.Query;
+import eu.openminted.content.connector.SearchResult;
+import eu.openminted.content.openaire.Parser;
 import eu.openminted.registry.domain.Facet;
 import eu.openminted.registry.domain.Value;
 import org.apache.log4j.Logger;
@@ -35,8 +39,8 @@ import java.util.*;
 
 @SuppressWarnings("WeakerAccess")
 @Component
-public class OpenAireConnector implements ContentConnector {
-    private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
+public class OpenAireContentConnector implements ContentConnector {
+    private static Logger log = Logger.getLogger(OpenAireContentConnector.class.getName());
     private String schemaAddress;
     private String defaultCollection;
 
@@ -52,7 +56,7 @@ public class OpenAireConnector implements ContentConnector {
     private Map<String, String> OmtdOpenAIREMap = new HashMap<>();
     private Map<String, String> OmtdFacetLabels = new HashMap<>();
 
-    public OpenAireConnector() {
+    public OpenAireContentConnector() {
         String PUBLICATION_TYPE = "publicationType";
         String PUBLICATION_YEAR = "publicationYear";
         String PUBLISHER = "publisher";
@@ -109,7 +113,7 @@ public class OpenAireConnector implements ContentConnector {
 
     /***
      * Search method for browsing metadata
-     * @param query the query as inserted in Content-Connector-Service
+     * @param query the query as inserted in Content-OpenAireContentConnector-Service
      * @return SearchResult with metadata and facets
      */
     @Override
@@ -170,7 +174,7 @@ public class OpenAireConnector implements ContentConnector {
                 searchResult.getPublications().add(parser.getOMTDPublication());
             }
         } catch (Exception e) {
-            log.error("OpenAireConnector.search", e);
+            log.error("OpenAireContentConnector.search", e);
         }
         return searchResult;
     }
@@ -193,7 +197,7 @@ public class OpenAireConnector implements ContentConnector {
 
     /***
      * Method for downloading metadata where the query's criteria are applicable
-     * @param query the query as inserted in Content-Connector-Service
+     * @param query the query as inserted in Content-OpenAireContentConnector-Service
      * @return The metadata in the form of InputStream
      */
     @Override
@@ -210,6 +214,7 @@ public class OpenAireConnector implements ContentConnector {
         client.setQueryLimit(queryLimit);
 
         PipedInputStream inputStream = new PipedInputStream();
+
         try {
             new Thread(() ->
                     client.fetchMetadata(query)).start();
@@ -219,13 +224,13 @@ public class OpenAireConnector implements ContentConnector {
             client.getPipedOutputStream().write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".getBytes());
             client.getPipedOutputStream().write("<OMTDPublications>\n".getBytes());
         } catch (IOException e) {
-
-            log.error("OpenAireConnector.fetchMetadata", e);
+            log.info("Fetching metadata has been interrupted!");
+            log.debug("OpenAireContentConnector.fetchMetadata", e);
             try {
                 inputStream.close();
                 client.getPipedOutputStream().close();
             } catch (IOException e1) {
-                log.error("OpenAireConnector.fetchMetadata", e1);
+                log.error("OpenAireContentConnector.fetchMetadata Inner exception!", e1);
             }
         }
 
@@ -306,7 +311,7 @@ public class OpenAireConnector implements ContentConnector {
 
     /***
      * Converts OMTD facets to OpenAIRE facets suitable for
-     * @param query the query as inserted in Content-Connector-Service
+     * @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
     private void buildFacets(Query query) {
 
@@ -325,7 +330,7 @@ public class OpenAireConnector implements ContentConnector {
 
     /***
      * Converts OMTD parameters to OpenAIRE parameters
-     * @param query the query as inserted in Content-Connector-Service
+     * @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
     private void buildParams(Query query) {
 
@@ -343,7 +348,7 @@ public class OpenAireConnector implements ContentConnector {
 
     /***
      * Adds field parameter `fl` and adds necessary value `__result` for the OpenAIRE index query
-     * @param query the query as inserted in Content-Connector-Service
+     * @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
     private void buildFields(Query query) {
 
@@ -361,7 +366,7 @@ public class OpenAireConnector implements ContentConnector {
 
     /***
      * Adds sorting parameter for the query
-     * @param query the query as inserted in Content-Connector-Service
+     * @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
     private void buildSort(Query query) {
 

@@ -1,4 +1,4 @@
-package eu.openminted.content.connector;
+package eu.openminted.content.openaire;
 
 import eu.openminted.content.openaire.PublicationResultHandler;
 import org.xml.sax.InputSource;

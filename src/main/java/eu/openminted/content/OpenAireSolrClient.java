@@ -1,5 +1,6 @@
-package eu.openminted.content.connector;
+package eu.openminted.content;
 
+import eu.openminted.content.connector.Query;
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -16,8 +17,8 @@ import java.util.List;
 import java.util.TimeZone;
 
 @SuppressWarnings("WeakerAccess")
-class OpenAireSolrClient {
-    private static Logger log = Logger.getLogger(OpenAireConnector.class.getName());
+public class OpenAireSolrClient {
+    private static Logger log = Logger.getLogger(OpenAireContentConnector.class.getName());
 
     private int rows = 10;
     private int start = 0;
@@ -29,23 +30,35 @@ class OpenAireSolrClient {
 
     /***
      * Search method for browsing metadata
-     * @param query the query as inserted in Content-Connector-Service
+     * @param query the query as inserted in Content-OpenAireContentConnector-Service
      * @return QueryResponse with metadata and facets
      */
-    public QueryResponse query(Query query) throws IOException, SolrServerException {
+    public QueryResponse query(Query query) {
+        QueryResponse queryResponse = null;
+        SolrQuery solrQuery = queryBuilder(query);
         CloudSolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
 
-        SolrQuery solrQuery = queryBuilder(query);
-        QueryResponse queryResponse = solrClient.query(defaultCollection, solrQuery);
-        solrClient.close();
+        try {
+            if (defaultCollection != null && !defaultCollection.isEmpty()) {
+                queryResponse = solrClient.query(defaultCollection, solrQuery);
+            }
+        } catch (SolrServerException | IOException e) {
+            log.error(e);
+        } finally {
+            try {
+                solrClient.close();
+            } catch (IOException e) {
+                log.error("Inner message", e);
+            }
+        }
         return queryResponse;
     }
 
     /***
      * Method for downloading metadata where the query's criteria are applicable
-     * @param query the query as inserted in Content-Connector-Service
+     * @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
-    void fetchMetadata(Query query) {
+    public void fetchMetadata(Query query) {
         CloudSolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
 
         SolrQuery solrQuery = queryBuilder(query);
@@ -73,7 +86,8 @@ class OpenAireSolrClient {
             outputStream.write("</OMTDPublications>\n".getBytes());
             outputStream.flush();
         } catch (IOException | SolrServerException e) {
-            log.error("OpenAireSolrClient.fetchMetadata", e);
+            log.info("Fetching metadata has been interrupted!");
+            log.debug("OpenAireSolrClient.fetchMetadata", e);
         } finally {
             try {
                 solrClient.close();
@@ -86,7 +100,7 @@ class OpenAireSolrClient {
 
     /***
      * Converts the query to the equivalent SolrQuery
-     * @param query the query as inserted in Content-Connector-Service
+     * @param query the query as inserted in Content-OpenAireContentConnector-Service
      * @return the SolrQuery that corresponds to input query.
      */
     private SolrQuery queryBuilder(Query query) {
@@ -193,7 +207,7 @@ class OpenAireSolrClient {
      * Returns the PipedOutputStream that is used to transfer metadata from the fetchMetadata method
      * @return the metadata through the PipedOutputStream
      */
-    PipedOutputStream getPipedOutputStream() {
+    public PipedOutputStream getPipedOutputStream() {
         return outputStream;
     }
 
