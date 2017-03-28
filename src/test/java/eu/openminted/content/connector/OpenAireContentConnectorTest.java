@@ -12,11 +12,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import javax.net.ssl.*;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathFactory;
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -70,7 +73,7 @@ public class OpenAireContentConnectorTest {
 //        query.getFacets().add("DocumentLanguage");
 //        query.getFacets().add("PublicationType");
 
-        while(openAireContentConnector.getDefaultCollection() == null || openAireContentConnector.getDefaultCollection().isEmpty())
+        while (openAireContentConnector.getDefaultCollection() == null || openAireContentConnector.getDefaultCollection().isEmpty())
             Thread.sleep(1000);
 
         SearchResult searchResult = openAireContentConnector.search(query);
@@ -106,6 +109,35 @@ public class OpenAireContentConnectorTest {
         Query query = new Query();
         query.setParams(new HashMap<>());
 
+        query.getParams().put("licence", new ArrayList<>());
+        query.getParams().get("licence").add("Open Access");
+
+        query.getParams().put("sort", new ArrayList<>());
+        query.getParams().get("sort").add("__indexrecordidentifier asc");
+        query.setKeyword("digital");
+        query.setFacets(new ArrayList<>());
+        query.getFacets().add("Licence");
+        query.getFacets().add("DocumentLanguage");
+        query.getFacets().add("PublicationType");
+
+        while (openAireContentConnector.getDefaultCollection() == null || openAireContentConnector.getDefaultCollection().isEmpty())
+            Thread.sleep(1000);
+
+        InputStream inputStream = openAireContentConnector.fetchMetadata(query);
+        String line;
+        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+        while ((line = br.readLine()) != null) {
+            System.out.println(line);
+        }
+        br.close();
+    }
+
+    @Test
+    @Ignore
+    public void fetchAbstracts() throws Exception {
+        Query query = new Query();
+        query.setParams(new HashMap<>());
+
         query.getParams().put("fq", new ArrayList<>());
         query.getParams().get("fq").add("licence:Embargo");
 
@@ -117,13 +149,33 @@ public class OpenAireContentConnectorTest {
         query.getFacets().add("DocumentLanguage");
         query.getFacets().add("PublicationType");
 
+        while (openAireContentConnector.getDefaultCollection() == null || openAireContentConnector.getDefaultCollection().isEmpty())
+            Thread.sleep(1000);
+
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        XPath xpath = XPathFactory.newInstance().newXPath();
+
+        Document currentDoc;
+        NodeList nodes;
+        currentDoc = dbf.newDocumentBuilder().newDocument();
+
         InputStream inputStream = openAireContentConnector.fetchMetadata(query);
-        String line;
-        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-        while ((line = br.readLine()) != null) {
-            System.out.println(line);
+        Document doc = dbf.newDocumentBuilder().parse(inputStream);
+        nodes = (NodeList) xpath.evaluate("//OMTDPublications/documentMetadataRecord", doc, XPathConstants.NODESET);
+        if (nodes != null) {
+            for (int i = 0; i < nodes.getLength(); i++) {
+                Node imported = currentDoc.importNode(nodes.item(i), true);
+                XPathExpression identifierExpression = xpath.compile("metadataHeaderInfo/metadataRecordIdentifier/text()");
+                String identifier = (String) identifierExpression.evaluate(imported, XPathConstants.STRING);
+
+                System.out.println(identifier);
+
+                // Find Abstracts from imported node
+                XPathExpression abstractListExpression = xpath.compile("document/publication/abstracts/abstract/text()");
+                String abstracts = (String) abstractListExpression.evaluate(imported, XPathConstants.STRING);
+                System.out.println(abstracts);
+            }
         }
-        br.close();
     }
 
     @Test
