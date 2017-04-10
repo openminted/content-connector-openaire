@@ -4,8 +4,13 @@ import eu.openminted.content.connector.ContentConnector;
 import eu.openminted.content.connector.Query;
 import eu.openminted.content.connector.SearchResult;
 import eu.openminted.content.openaire.Parser;
+import eu.openminted.omtdcache.core.Cache;
+import eu.openminted.omtdcache.core.CacheFactory;
+import eu.openminted.omtdcache.core.CacheOMTDStoreImpl;
+import eu.openminted.omtdcache.core.CacheProperties;
 import eu.openminted.registry.domain.Facet;
 import eu.openminted.registry.domain.Value;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -52,6 +57,18 @@ public class OpenAireContentConnector implements ContentConnector {
 
     @org.springframework.beans.factory.annotation.Value("${solr.query.limit}")
     private String queryLimit;
+
+    @org.springframework.beans.factory.annotation.Value("${cache.id}")
+    private String cacheId;
+
+    @org.springframework.beans.factory.annotation.Value("${store.host}")
+    private String storeRestClientEndpoint;
+
+    @org.springframework.beans.factory.annotation.Value("${cache.buckets.count}")
+    private String cacheBucketCount;
+
+    @org.springframework.beans.factory.annotation.Value("${cache.overwrite}")
+    private String cacheOverwite;
 
     private Map<String, String> OmtdOpenAIREMap = new HashMap<>();
     private Map<String, String> OmtdFacetLabels = new HashMap<>();
@@ -188,9 +205,23 @@ public class OpenAireContentConnector implements ContentConnector {
     public InputStream downloadFullText(String s) {
         InputStream inputStream = null;
         try {
-            inputStream = new URL("http://adonis.athenarc.gr/pdfs/" + s + ".pdf").openStream();
-        } catch (IOException e) {
-            log.debug("PDF for " + s + " is unavailable...");
+            // Define cache properties
+            CacheProperties cacheProperties = new CacheProperties();
+            cacheProperties.setCacheID(cacheId);
+            cacheProperties.setRestEndpoint(storeRestClientEndpoint);
+            cacheProperties.setType(CacheOMTDStoreImpl.class.getName());
+
+            // properties in application.properties are strings, so they need to be converted
+            Integer bucketsCount = Integer.parseInt(cacheBucketCount);
+            boolean overwrite = Boolean.parseBoolean(cacheOverwite);
+
+            cacheProperties.setBuckets(bucketsCount);
+            cacheProperties.setOverwrite(overwrite);
+
+            CacheClient cacheClient = new CacheClient(cacheProperties);
+            inputStream = cacheClient.getDocument(s);
+        } catch (NumberFormatException e) {
+            log.error("downloadFullText: Error converting string number of buckets to integer", e);
         }
         return inputStream;
     }
