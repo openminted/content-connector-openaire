@@ -1,16 +1,10 @@
-package eu.openminted.content;
+package eu.openminted.content.openaire;
 
 import eu.openminted.content.connector.ContentConnector;
 import eu.openminted.content.connector.Query;
 import eu.openminted.content.connector.SearchResult;
-import eu.openminted.content.openaire.Parser;
-import eu.openminted.omtdcache.core.Cache;
-import eu.openminted.omtdcache.core.CacheFactory;
-import eu.openminted.omtdcache.core.CacheOMTDStoreImpl;
-import eu.openminted.omtdcache.core.CacheProperties;
 import eu.openminted.registry.domain.Facet;
 import eu.openminted.registry.domain.Value;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -28,14 +22,8 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.io.StringReader;
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
-import java.net.URL;
-import java.net.URLConnection;
+import java.io.*;
+import java.net.*;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -58,17 +46,8 @@ public class OpenAireContentConnector implements ContentConnector {
     @org.springframework.beans.factory.annotation.Value("${solr.query.limit}")
     private String queryLimit;
 
-    @org.springframework.beans.factory.annotation.Value("${cache.id}")
-    private String cacheId;
-
-    @org.springframework.beans.factory.annotation.Value("${store.host}")
-    private String storeRestClientEndpoint;
-
-    @org.springframework.beans.factory.annotation.Value("${cache.buckets.count}")
-    private String cacheBucketCount;
-
-    @org.springframework.beans.factory.annotation.Value("${cache.overwrite}")
-    private String cacheOverwite;
+    @org.springframework.beans.factory.annotation.Value("${solr.query.output.field}")
+    private String queryOutputField;
 
     private Map<String, String> OmtdOpenAIREMap = new HashMap<>();
     private Map<String, String> OmtdFacetLabels = new HashMap<>();
@@ -113,19 +92,22 @@ public class OpenAireContentConnector implements ContentConnector {
         // awaiting period is 10 minutes
         final long period = (long) 10 * 60 * 1000;
 
-        System.out.println(getProfileUrl);
-        System.out.println(hosts);
-        System.out.println(queryLimit);
+        // Assert that query limit is a proper integer
+        try {
+            Integer.parseInt(queryLimit);
 
-        TimerTask timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                updateDefaultConnection();
-            }
-        };
+            TimerTask timerTask = new TimerTask() {
+                @Override
+                public void run() {
+                    updateDefaultConnection();
+                }
+            };
 
-        Timer timer = new Timer(true);
-        timer.schedule(timerTask, 0, period);
+            Timer timer = new Timer(true);
+            timer.schedule(timerTask, 0, period);
+        } catch (NumberFormatException e) {
+            log.error("OpenAireContentConnector: Wrong solr query limit number!", e);
+        }
     }
 
     /***
@@ -149,7 +131,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
             OpenAireSolrClient solrClient = new OpenAireSolrClient();
             solrClient.setHosts(hosts);
-            solrClient.setQueryLimit(queryLimit);
+            solrClient.setQueryLimit(Integer.parseInt(queryLimit));
             solrClient.setDefaultCollection(defaultCollection);
 
             QueryResponse response = solrClient.query(query);
@@ -170,8 +152,10 @@ public class OpenAireContentConnector implements ContentConnector {
                     }
                 }
                 // Facet Field documenttype does not exist in OpenAIRE, so we added it explicitly
-                Facet documentTypeFacet = buildFacet(FACET_DOCUMENT_TYPE_FIELD, FACET_DOCUMENT_TYPE_LABEL, FACET_DOCUMENT_TYPE_COUNT_NAME, searchResult.getTotalHits());
-                facets.put(documentTypeFacet.getField(), documentTypeFacet);
+                if (searchResult.getTotalHits() > 0) {
+                    Facet documentTypeFacet = buildFacet(FACET_DOCUMENT_TYPE_FIELD, FACET_DOCUMENT_TYPE_LABEL, FACET_DOCUMENT_TYPE_COUNT_NAME, searchResult.getTotalHits());
+                    facets.put(documentTypeFacet.getField(), documentTypeFacet);
+                }
             }
 
             searchResult.setFacets(new ArrayList<>(facets.values()));
@@ -186,7 +170,7 @@ public class OpenAireContentConnector implements ContentConnector {
                 // TODO: xml validation for the initial queries is needed and yet the oaf xsd has issues
                 // leaving xml validation for as feature in future commit
 
-                String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + document.getFieldValue("__result").toString().replaceAll("\\[|\\]", "");
+                String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + document.getFieldValue(queryOutputField).toString().replaceAll("\\[|\\]", "");
                 parser.parse(new InputSource(new StringReader(xml)));
                 searchResult.getPublications().add(parser.getOMTDPublication());
             }
@@ -205,23 +189,11 @@ public class OpenAireContentConnector implements ContentConnector {
     public InputStream downloadFullText(String s) {
         InputStream inputStream = null;
         try {
-            // Define cache properties
-            CacheProperties cacheProperties = new CacheProperties();
-            cacheProperties.setCacheID(cacheId);
-            cacheProperties.setRestEndpoint(storeRestClientEndpoint);
-            cacheProperties.setType(CacheOMTDStoreImpl.class.getName());
-
-            // properties in application.properties are strings, so they need to be converted
-            Integer bucketsCount = Integer.parseInt(cacheBucketCount);
-            boolean overwrite = Boolean.parseBoolean(cacheOverwite);
-
-            cacheProperties.setBuckets(bucketsCount);
-            cacheProperties.setOverwrite(overwrite);
-
-            CacheClient cacheClient = new CacheClient(cacheProperties);
-            inputStream = cacheClient.getDocument(s);
-        } catch (NumberFormatException e) {
-            log.error("downloadFullText: Error converting string number of buckets to integer", e);
+            inputStream = new URL("http://adonis.athenarc.gr/pdfs/" + s + ".pdf").openStream();
+        } catch (MalformedURLException e) {
+            log.error("downloadFullText: MalformedURLException ", e);
+        } catch (IOException e) {
+            log.error("downloadFullText: IOException ", e);
         }
         return inputStream;
     }
@@ -233,36 +205,52 @@ public class OpenAireContentConnector implements ContentConnector {
      */
     @Override
     public InputStream fetchMetadata(Query query) {
-
         buildParams(query);
         buildFacets(query);
         buildFields(query);
         buildSort(query);
 
-        OpenAireSolrClient client = new OpenAireSolrClient();
-        client.setDefaultCollection(defaultCollection);
-        client.setHosts(hosts);
-        client.setQueryLimit(queryLimit);
-
         PipedInputStream inputStream = new PipedInputStream();
+        PipedOutputStream outputStream = new PipedOutputStream();
+        final OpenAireSolrClient client;
 
         try {
-            new Thread(() ->
-                    client.fetchMetadata(query)).start();
 
-            client.getPipedOutputStream().connect(inputStream);
+            client = new OpenAireSolrClient();
+            client.setDefaultCollection(defaultCollection);
+            client.setHosts(hosts);
+            client.setQueryLimit(Integer.parseInt(queryLimit));
+            new Thread(() -> {
+                try {
+                    client.fetchMetadata(query, new OpenAireStreamingResponseCallback(outputStream, queryOutputField));
+                    outputStream.flush();
+                    outputStream.write("</OMTDPublications>\n".getBytes());
+                } catch (IOException e) {
+                    log.info("Fetching metadata has been interrupted. See debug for details!");
+                    log.debug("OpenAireSolrClient.fetchMetadata", e);
+                } finally {
+                    try {
+                        outputStream.close();
+                    } catch (IOException e) {
+                        log.error("OpenAireSolrClient.fetchMetadata", e);
+                    }
+                }
+            }).start();
 
-            client.getPipedOutputStream().write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".getBytes());
-            client.getPipedOutputStream().write("<OMTDPublications>\n".getBytes());
+            outputStream.connect(inputStream);
+            outputStream.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".getBytes());
+            outputStream.write("<OMTDPublications>\n".getBytes());
         } catch (IOException e) {
-            log.info("Fetching metadata has been interrupted!");
+            log.info("Fetching metadata has been interrupted. See debug for details!");
             log.debug("OpenAireContentConnector.fetchMetadata", e);
             try {
                 inputStream.close();
-                client.getPipedOutputStream().close();
+                outputStream.close();
             } catch (IOException e1) {
                 log.error("OpenAireContentConnector.fetchMetadata Inner exception!", e1);
             }
+        } catch (Exception e) {
+            log.error("OpenAireContentConnector.fetchMetadata Generic exception!", e);
         }
 
         return inputStream;
@@ -308,6 +296,7 @@ public class OpenAireContentConnector implements ContentConnector {
             facet.setLabel(OmtdFacetLabels.get(field));
             List<Value> values = new ArrayList<>();
             for (FacetField.Count count : facetField.getValues()) {
+                if (count.getCount() == 0) continue;
                 Value value = new Value();
                 value.setValue(count.getName());
                 value.setCount((int) count.getCount());
@@ -378,7 +367,8 @@ public class OpenAireContentConnector implements ContentConnector {
     }
 
     /***
-     * Adds field parameter `fl` and adds necessary value `__result` for the OpenAIRE index query
+     * Adds field parameter `fl` and adds necessary value of queryOutputField (now `__result`)
+     * for the OpenAIRE index query
      * @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
     private void buildFields(Query query) {
@@ -387,10 +377,10 @@ public class OpenAireContentConnector implements ContentConnector {
 
         if (!query.getParams().containsKey("fl")) {
             query.getParams().put("fl", new ArrayList<>());
-            query.getParams().get("fl").add("__result");
+            query.getParams().get("fl").add(queryOutputField);
         } else {
-            if (!query.getParams().get("fl").contains("__result")) {
-                query.getParams().get("fl").add("__result");
+            if (!query.getParams().get("fl").contains(queryOutputField)) {
+                query.getParams().get("fl").add(queryOutputField);
             }
         }
     }

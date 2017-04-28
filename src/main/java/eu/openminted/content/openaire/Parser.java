@@ -1,6 +1,5 @@
 package eu.openminted.content.openaire;
 
-import eu.openminted.content.openaire.PublicationResultHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -10,20 +9,20 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.IOException;
 
-public class Parser {
+class Parser {
     private PublicationResultHandler handler;
 
-    public Parser() throws JAXBException, ParserConfigurationException, SAXException, IOException {
+    Parser() throws JAXBException, ParserConfigurationException, SAXException, IOException {
         handler = new PublicationResultHandler();
     }
 
-    public void parse(InputSource inputSource) throws IOException, SAXException, ParserConfigurationException {
+    void parse(InputSource inputSource) throws IOException, SAXException, ParserConfigurationException {
         SAXParserFactory factory = SAXParserFactory.newInstance();
         SAXParser saxParser = factory.newSAXParser();
         saxParser.parse(inputSource, handler);
     }
 
-    public String getOMTDPublication() {
+    String getOMTDPublication() {
         return handler.getOMTDPublication();
     }
 

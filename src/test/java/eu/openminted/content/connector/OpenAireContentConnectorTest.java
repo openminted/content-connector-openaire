@@ -1,7 +1,7 @@
 package eu.openminted.content.connector;
 
 import eu.openminted.content.ConnectorConfiguration;
-import eu.openminted.content.OpenAireContentConnector;
+import eu.openminted.content.openaire.OpenAireContentConnector;
 import eu.openminted.registry.domain.Facet;
 import eu.openminted.registry.domain.Value;
 import org.apache.log4j.Logger;
@@ -61,16 +61,16 @@ public class OpenAireContentConnectorTest {
         query.getParams().get("sort").add("__indexrecordidentifier asc");
         query.getParams().put("licence", new ArrayList<>());
         query.getParams().get("licence").add("Open Access");
-//        query.getParams().put("publicationYear", new ArrayList<>());
+        query.getParams().put("publicationYear", new ArrayList<>());
 //        query.getParams().get("publicationYear").add("2010");
 //        query.getParams().get("publicationYear").add("2011");
 //        query.getParams().get("publicationYear").add("2012");
-        query.setKeyword("digital");
+        query.setKeyword("*:*");
         query.setFacets(new ArrayList<>());
         query.getFacets().add("Licence");
-        query.getFacets().add("resulttypename");
+//        query.getFacets().add("resulttypename");
         query.getFacets().add("publicationYear");
-//        query.getFacets().add("DocumentLanguage");
+        query.getFacets().add("DocumentLanguage");
 //        query.getFacets().add("PublicationType");
 
         while (openAireContentConnector.getDefaultCollection() == null || openAireContentConnector.getDefaultCollection().isEmpty())
@@ -79,9 +79,9 @@ public class OpenAireContentConnectorTest {
         SearchResult searchResult = openAireContentConnector.search(query);
 
         if (searchResult.getPublications() != null) {
-            for (String metadataRecord : searchResult.getPublications()) {
-                System.out.println(metadataRecord);
-            }
+//            for (String metadataRecord : searchResult.getPublications()) {
+//                System.out.println(metadataRecord);
+//            }
 
             for (Facet facet : searchResult.getFacets()) {
                 System.out.println("facet:{" + facet.getLabel() + "[");
@@ -110,7 +110,7 @@ public class OpenAireContentConnectorTest {
         query.setParams(new HashMap<>());
 
         query.getParams().put("licence", new ArrayList<>());
-        query.getParams().get("licence").add("Open Access");
+        query.getParams().get("licence").add("Embargo");
 
         query.getParams().put("sort", new ArrayList<>());
         query.getParams().get("sort").add("__indexrecordidentifier asc");

@@ -43,7 +43,7 @@ public class PublicationResultHandler extends DefaultHandler {
 
     private String OMTDPublication;
 
-    public PublicationResultHandler() throws JAXBException {
+    PublicationResultHandler() throws JAXBException {
         JAXBContext jaxbContext = JAXBContext.newInstance(DocumentMetadataRecord.class);
         jaxbMarshaller = jaxbContext.createMarshaller();
         jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
@@ -530,6 +530,17 @@ public class PublicationResultHandler extends DefaultHandler {
                 value = "";
             }
         }
+        /*
+         fulltext
+         */
+        else if (qName.equalsIgnoreCase("fulltext")) {
+            if (!value.trim().isEmpty()) {
+                JournalTitle journalTitle = new JournalTitle();
+                journalTitle.setValue(value);
+                publication.getJournal().getJournalTitles().add(journalTitle);
+                value = "";
+            }
+        }
     }
 
     @Override
@@ -543,7 +554,7 @@ public class PublicationResultHandler extends DefaultHandler {
         }
     }
 
-    public String getOMTDPublication() {
+    String getOMTDPublication() {
         return OMTDPublication;
     }
 }

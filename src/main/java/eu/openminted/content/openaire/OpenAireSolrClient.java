@@ -1,15 +1,18 @@
-package eu.openminted.content;
+package eu.openminted.content.openaire;
 
 import eu.openminted.content.connector.Query;
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.StreamingResponseCallback;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CursorMarkParams;
 
 import java.io.IOException;
-import java.io.PipedOutputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -25,8 +28,7 @@ public class OpenAireSolrClient {
 
     private String defaultCollection;
     private String hosts;
-    private String queryLimit;
-    private final PipedOutputStream outputStream = new PipedOutputStream();
+    private int queryLimit = 0;
 
     /***
      * Search method for browsing metadata
@@ -58,24 +60,24 @@ public class OpenAireSolrClient {
      * Method for downloading metadata where the query's criteria are applicable
      * @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
-    public void fetchMetadata(Query query) {
-        CloudSolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
+    public void fetchMetadata(Query query, StreamingResponseCallback streamingResponseCallback) throws IOException {
+        if (streamingResponseCallback == null) return;
 
         SolrQuery solrQuery = queryBuilder(query);
         String cursorMark = CursorMarkParams.CURSOR_MARK_START;
         boolean done = false;
-        int limit = Integer.parseInt(queryLimit);
 
-        try {
-            outputStream.flush();
+        try (CloudSolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build()) {
             int count = 0;
             while (!done) {
                 solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
-                QueryResponse rsp = solrClient.queryAndStreamResponse(defaultCollection, solrQuery,
-                        new OpenAireStreamingResponseCallback(outputStream, "__result"));
+                QueryResponse rsp = solrClient.queryAndStreamResponse(defaultCollection,
+                        solrQuery,
+                        streamingResponseCallback);
 
                 count += this.rows;
-                if (count >= limit) break;
+
+                if (queryLimit > 0 && count >= queryLimit) break;
 
                 String nextCursorMark = rsp.getNextCursorMark();
                 if (cursorMark.equals(nextCursorMark)) {
@@ -83,18 +85,27 @@ public class OpenAireSolrClient {
                 }
                 cursorMark = nextCursorMark;
             }
-            outputStream.write("</OMTDPublications>\n".getBytes());
-            outputStream.flush();
-        } catch (IOException | SolrServerException e) {
-            log.info("Fetching metadata has been interrupted!");
+        } catch (SolrServerException e) {
+            log.info("Fetching metadata has been interrupted. See Debug for more information!");
             log.debug("OpenAireSolrClient.fetchMetadata", e);
-        } finally {
-            try {
-                solrClient.close();
-                outputStream.close();
-            } catch (IOException e) {
-                log.error("OpenAireSolrClient.fetchMetadata", e);
-            }
+        }
+    }
+
+    /***
+     * Method to index a SolrInputDocument
+     * @param solrInputDocument the document that is going to be indexed
+     */
+    public void commit(SolrInputDocument solrInputDocument) {
+        try {
+            String localHost = "http://adonis.athenarc.gr:8983/solr/adonis-index-openaire/";
+
+            HttpSolrClient solrClient = new HttpSolrClient.Builder(localHost).build();
+            solrClient.setRequestWriter(new BinaryRequestWriter());
+
+            solrClient.add(solrInputDocument);
+            solrClient.commit();
+        } catch (IOException | SolrServerException e) {
+            e.printStackTrace();
         }
     }
 
@@ -103,7 +114,7 @@ public class OpenAireSolrClient {
      * @param query the query as inserted in Content-OpenAireContentConnector-Service
      * @return the SolrQuery that corresponds to input query.
      */
-    private SolrQuery queryBuilder(Query query) {
+    public SolrQuery queryBuilder(Query query) {
         String FILTER_QUERY_RESULT_TYPE_NAME = "resulttypename:publication";
         String FILTER_QUERY_DELETED_BY_INFERENCE = "deletedbyinference:false";
 
@@ -150,7 +161,7 @@ public class OpenAireSolrClient {
                         SimpleDateFormat queryDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
                         TimeZone UTC = TimeZone.getTimeZone("UTC");
                         queryDateFormat.setTimeZone(UTC);
-                        String datetimeFieldQuery = "";
+                        StringBuilder datetimeFieldQuery = new StringBuilder();
                         for (String val : vals) {
                             Date date;
                             String queryDate;
@@ -167,48 +178,39 @@ public class OpenAireSolrClient {
 
                                 date = queryDateFormat.parse(val);
                                 queryDate = queryDateFormat.format(date);
-                                datetimeFieldQuery += key + ":[" + queryDate + " TO " + queryDate + "+1YEAR] OR ";
+                                datetimeFieldQuery.append(key).append(":[").append(queryDate).append(" TO ").append(queryDate).append("+1YEAR] OR ");
                             } catch (ParseException e) {
                                 try {
                                     date = queryDateFormat.parse(val);
                                     queryDate = queryDateFormat.format(date);
-                                    datetimeFieldQuery += key + ":[" + queryDate + " TO " + queryDate + "+1YEAR] OR ";
+                                    datetimeFieldQuery.append(key).append(":[").append(queryDate).append(" TO ").append(queryDate).append("+1YEAR] OR ");
                                 } catch (ParseException e1) {
                                     e1.printStackTrace();
                                 }
                             }
                         }
-                        datetimeFieldQuery = datetimeFieldQuery.replaceAll(" OR $", "");
-                        solrQuery.addFilterQuery(datetimeFieldQuery);
-
+                        datetimeFieldQuery = new StringBuilder(datetimeFieldQuery.toString().replaceAll(" OR $", ""));
+                        solrQuery.addFilterQuery(datetimeFieldQuery.toString());
                     } else {
-                        String fieldQuery = "";
+                        StringBuilder fieldQuery = new StringBuilder();
                         for (String val : vals) {
-                            fieldQuery += key + ":" + val + " OR ";
+                            fieldQuery.append(key).append(":").append("\"" + val + "\"").append(" OR ");
                         }
-                        fieldQuery = fieldQuery.replaceAll(" OR $", "");
-                        solrQuery.addFilterQuery(fieldQuery);
+                        fieldQuery = new StringBuilder(fieldQuery.toString().replaceAll(" OR $", ""));
+                        solrQuery.addFilterQuery(fieldQuery.toString());
                     }
                 }
             }
         }
 
-        solrQuery.addFilterQuery(FILTER_QUERY_RESULT_TYPE_NAME);
-        solrQuery.addFilterQuery(FILTER_QUERY_DELETED_BY_INFERENCE);
+//        solrQuery.addFilterQuery(FILTER_QUERY_RESULT_TYPE_NAME);
+//        solrQuery.addFilterQuery(FILTER_QUERY_DELETED_BY_INFERENCE);
 
         solrQuery.setQuery(query.getKeyword());
 
         log.info(solrQuery.toString());
 
         return solrQuery;
-    }
-
-    /***
-     * Returns the PipedOutputStream that is used to transfer metadata from the fetchMetadata method
-     * @return the metadata through the PipedOutputStream
-     */
-    public PipedOutputStream getPipedOutputStream() {
-        return outputStream;
     }
 
     public String getDefaultCollection() {
@@ -227,11 +229,16 @@ public class OpenAireSolrClient {
         this.hosts = hosts;
     }
 
-    public String getQueryLimit() {
+    public int getQueryLimit() {
         return queryLimit;
     }
 
-    public void setQueryLimit(String queryLimit) {
+    /**
+     * Sets a limit to returned metadata. Set limit to zero in order to ignore limitation
+     *
+     * @param queryLimit integer that represents the total amount of results from the index
+     */
+    public void setQueryLimit(int queryLimit) {
         this.queryLimit = queryLimit;
     }
 }
