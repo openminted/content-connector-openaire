@@ -2,6 +2,7 @@ package eu.openminted.content.openaire;
 
 import eu.openminted.content.connector.Query;
 import org.apache.log4j.Logger;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
@@ -29,6 +30,17 @@ public class OpenAireSolrClient {
     private String defaultCollection;
     private String hosts;
     private int queryLimit = 0;
+    private String type;
+
+    private OpenAireSolrClient() {
+    }
+
+    public OpenAireSolrClient(String type, String hosts, String defaultCollection, int queryLimit) {
+        this.type = type;
+        this.hosts = hosts;
+        this.defaultCollection = defaultCollection;
+        this.queryLimit = queryLimit;
+    }
 
     /***
      * Search method for browsing metadata
@@ -38,7 +50,9 @@ public class OpenAireSolrClient {
     public QueryResponse query(Query query) {
         QueryResponse queryResponse = null;
         SolrQuery solrQuery = queryBuilder(query);
-        CloudSolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
+        SolrClient solrClient = getSolrClient();
+
+        assert (solrClient != null);
 
         try {
             if (defaultCollection != null && !defaultCollection.isEmpty()) {
@@ -67,17 +81,18 @@ public class OpenAireSolrClient {
         String cursorMark = CursorMarkParams.CURSOR_MARK_START;
         boolean done = false;
 
-        try (CloudSolrClient solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build()) {
+        try (SolrClient solrClient = getSolrClient()) {
+
+            assert (solrClient != null);
+
             int count = 0;
-            while (!done) {
+            while (!done && !(queryLimit > 0 && count >= queryLimit)) {
                 solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
                 QueryResponse rsp = solrClient.queryAndStreamResponse(defaultCollection,
                         solrQuery,
                         streamingResponseCallback);
 
                 count += this.rows;
-
-                if (queryLimit > 0 && count >= queryLimit) break;
 
                 String nextCursorMark = rsp.getNextCursorMark();
                 if (cursorMark.equals(nextCursorMark)) {
@@ -203,8 +218,8 @@ public class OpenAireSolrClient {
             }
         }
 
-//        solrQuery.addFilterQuery(FILTER_QUERY_RESULT_TYPE_NAME);
-//        solrQuery.addFilterQuery(FILTER_QUERY_DELETED_BY_INFERENCE);
+        solrQuery.addFilterQuery(FILTER_QUERY_RESULT_TYPE_NAME);
+        solrQuery.addFilterQuery(FILTER_QUERY_DELETED_BY_INFERENCE);
 
         solrQuery.setQuery(query.getKeyword());
 
@@ -213,32 +228,12 @@ public class OpenAireSolrClient {
         return solrQuery;
     }
 
-    public String getDefaultCollection() {
-        return defaultCollection;
-    }
-
-    public void setDefaultCollection(String defaultCollection) {
-        this.defaultCollection = defaultCollection;
-    }
-
-    public String getHosts() {
-        return hosts;
-    }
-
-    public void setHosts(String hosts) {
-        this.hosts = hosts;
-    }
-
-    public int getQueryLimit() {
-        return queryLimit;
-    }
-
-    /**
-     * Sets a limit to returned metadata. Set limit to zero in order to ignore limitation
-     *
-     * @param queryLimit integer that represents the total amount of results from the index
-     */
-    public void setQueryLimit(int queryLimit) {
-        this.queryLimit = queryLimit;
+    private SolrClient getSolrClient() {
+        if (type.equalsIgnoreCase(CloudSolrClient.class.getName())) {
+            return new CloudSolrClient.Builder().withZkHost(hosts).build();
+        } else if (type.equalsIgnoreCase(HttpSolrClient.class.getName())) {
+            return new HttpSolrClient.Builder(hosts).build();
+        }
+        return null;
     }
 }

@@ -31,6 +31,7 @@ public class PublicationResultHandler extends DefaultHandler {
     private RelatedPerson author;
     private DocumentDistributionInfo documentDistributionInfo;
     private RightsInfo rightsInfo;
+    private RelatedJournal relatedJournal;
 
     private String description = "";
     private String value = "";
@@ -39,6 +40,8 @@ public class PublicationResultHandler extends DefaultHandler {
     private boolean hasKeyword = false;
     private boolean hasSubject = false;
     private boolean hasAbstract = false;
+    private boolean hasIndexInfo = false;
+
     private Marshaller jaxbMarshaller;
 
     private String OMTDPublication;
@@ -59,6 +62,7 @@ public class PublicationResultHandler extends DefaultHandler {
         documentMetadataRecord.setMetadataHeaderInfo(metadataHeaderInfo);
         documentMetadataRecord.setDocument(document);
         rightsInfo = new RightsInfo();
+        relatedJournal = new RelatedJournal();
     }
 
     @Override
@@ -153,10 +157,39 @@ public class PublicationResultHandler extends DefaultHandler {
             }
         }
         /*
+            MetadataInfo
+         */
+        else if (qName.equalsIgnoreCase("dri:objIdentifier")) {
+            value = "";
+        }
+        /*
+            MetadataCreationDate
+            Start of dri:dateOfCollection element
+         */
+        else if (qName.equalsIgnoreCase("dri:dateOfCollection")) {
+            value = "";
+        }
+        /*
+            MetadataLastDateUpdated
+            Start of dri:dateOfTransformation element
+         */
+        else if (qName.equalsIgnoreCase("dri:dateOfTransformation")) {
+            value = "";
+        }
+        /*
+            Title element
+            Title elements can be found within a <rel> element.
+            Notice that OMTD title is the one NOT within a <rel> element.
+         */
+        else if (qName.equalsIgnoreCase("title")) {
+            value = "";
+        }
+        /*
             DocumentLanguage
             OpenAire is using different language coding from OMTD
          */
         else if (qName.equalsIgnoreCase("language")) {
+            value = "";
             String classid = attributes.getValue("classid");
             String classname = attributes.getValue("classname");
 
@@ -179,15 +212,17 @@ public class PublicationResultHandler extends DefaultHandler {
             DocumentDistributionInfo (preparation for accessing the downloading URL)
          */
         else if (qName.equalsIgnoreCase("webresource")) {
+            value = "";
             documentDistributionInfo = new DocumentDistributionInfo();
-        }
-        else if (qName.equalsIgnoreCase("url")) {
+        } else if (qName.equalsIgnoreCase("url")) {
             documentDistributionInfo = new DocumentDistributionInfo();
+            value = "";
         }
         /*
             Subjects and Keywords
          */
         else if (qName.equalsIgnoreCase("subject")) {
+            value = "";
             String classid = attributes.getValue("classid");
             String schemeid = attributes.getValue("schemeid");
 
@@ -201,6 +236,7 @@ public class PublicationResultHandler extends DefaultHandler {
             Abstract
          */
         else if (qName.equalsIgnoreCase("description")) {
+            value = "";
             description = "";
             hasAbstract = true;
         }
@@ -227,6 +263,7 @@ public class PublicationResultHandler extends DefaultHandler {
             Journal
          */
         else if (qName.equalsIgnoreCase("journal")) {
+            value = "";
             String eissn = attributes.getValue("eissn");
             String issn = attributes.getValue("issn");
             String lissn = attributes.getValue("lissn");
@@ -250,6 +287,23 @@ public class PublicationResultHandler extends DefaultHandler {
                 journalIdentifier.setValue(lissn);
                 publication.getJournal().getJournalIdentifiers().add(journalIdentifier);
             }
+        }
+        /*
+            contributor
+         */
+        else if (qName.equalsIgnoreCase("contributor")) {
+            value = "";
+        }
+        /*
+            indexinfo
+         */
+        else if (qName.equalsIgnoreCase("indexinfo")) {
+            value = "";
+            hasIndexInfo = true;
+        } else if (qName.equalsIgnoreCase("hashkey")) {
+            value = "";
+        } else if (qName.equalsIgnoreCase("mimetype")) {
+            value = "";
         }
     }
 
@@ -288,7 +342,6 @@ public class PublicationResultHandler extends DefaultHandler {
                     gregorianCalendar.setTime(date);
                     XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
                     documentMetadataRecord.getMetadataHeaderInfo().setMetadataCreationDate(xmlGregorianCalendar);
-                    value = "";
                 } catch (ParseException | DatatypeConfigurationException e) {
                     simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
                     java.util.Date date;
@@ -299,7 +352,6 @@ public class PublicationResultHandler extends DefaultHandler {
                         gregorianCalendar.setTime(date);
                         XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
                         documentMetadataRecord.getMetadataHeaderInfo().setMetadataCreationDate(xmlGregorianCalendar);
-                        value = "";
                     } catch (ParseException | DatatypeConfigurationException e1) {
                         log.error("PublicationResultHandler.dateOfCollection", e1);
                     }
@@ -319,7 +371,6 @@ public class PublicationResultHandler extends DefaultHandler {
                     gregorianCalendar.setTime(date);
                     XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
                     documentMetadataRecord.getMetadataHeaderInfo().setMetadataLastDateUpdated(xmlGregorianCalendar);
-                    value = "";
                 } catch (ParseException | DatatypeConfigurationException e) {
                     simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
                     try {
@@ -328,7 +379,6 @@ public class PublicationResultHandler extends DefaultHandler {
                         gregorianCalendar.setTime(date);
                         XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
                         documentMetadataRecord.getMetadataHeaderInfo().setMetadataLastDateUpdated(xmlGregorianCalendar);
-                        value = "";
                     } catch (ParseException | DatatypeConfigurationException e1) {
                         log.error("PublicationResultHandler.dateOfTransformation", e1);
                     }
@@ -451,8 +501,12 @@ public class PublicationResultHandler extends DefaultHandler {
          */
         else if (qName.equalsIgnoreCase("url")) {
             if (!value.trim().isEmpty()) {
-                documentDistributionInfo.getDistributionMediums().add(DistributionMediumEnum.DOWNLOADABLE);
-                documentDistributionInfo.getDownloadURLs().add(value);
+                if (hasIndexInfo)
+                    System.out.println(value);
+                else {
+                    documentDistributionInfo.getDistributionMediums().add(DistributionMediumEnum.DOWNLOADABLE);
+                    documentDistributionInfo.getDownloadURLs().add(value);
+                }
                 value = "";
             }
         }
@@ -483,7 +537,6 @@ public class PublicationResultHandler extends DefaultHandler {
                 publication.getSubjects().add(subject);
                 hasSubject = false;
             }
-            value = "";
         }
         /*
             Abstract
@@ -524,6 +577,7 @@ public class PublicationResultHandler extends DefaultHandler {
          */
         else if (qName.equalsIgnoreCase("journal")) {
             if (!value.trim().isEmpty()) {
+                if (publication.getJournal() == null) publication.setJournal(relatedJournal);
                 JournalTitle journalTitle = new JournalTitle();
                 journalTitle.setValue(value);
                 publication.getJournal().getJournalTitles().add(journalTitle);
@@ -535,11 +589,25 @@ public class PublicationResultHandler extends DefaultHandler {
          */
         else if (qName.equalsIgnoreCase("fulltext")) {
             if (!value.trim().isEmpty()) {
+                if (publication.getJournal() == null) publication.setJournal(relatedJournal);
                 JournalTitle journalTitle = new JournalTitle();
                 journalTitle.setValue(value);
                 publication.getJournal().getJournalTitles().add(journalTitle);
                 value = "";
             }
+        }
+        /*
+            indexinfo
+            url element is described in another case above
+         */
+        else if (qName.equalsIgnoreCase("indexinfo")) {
+            hasIndexInfo = false;
+        } else if (qName.equalsIgnoreCase("hashkey")) {
+            if (hasIndexInfo)
+                System.out.println(value);
+        } else if (qName.equalsIgnoreCase("mimetype")) {
+            if (hasIndexInfo)
+                System.out.println(value);
         }
     }
 

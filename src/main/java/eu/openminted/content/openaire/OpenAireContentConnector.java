@@ -6,6 +6,8 @@ import eu.openminted.content.connector.SearchResult;
 import eu.openminted.registry.domain.Facet;
 import eu.openminted.registry.domain.Value;
 import org.apache.log4j.Logger;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -35,7 +37,6 @@ import java.util.*;
 public class OpenAireContentConnector implements ContentConnector {
     private static Logger log = Logger.getLogger(OpenAireContentConnector.class.getName());
     private String schemaAddress;
-    private String defaultCollection;
 
     @org.springframework.beans.factory.annotation.Value("${services.openaire.getProfile}")
     private String getProfileUrl;
@@ -48,6 +49,15 @@ public class OpenAireContentConnector implements ContentConnector {
 
     @org.springframework.beans.factory.annotation.Value("${solr.query.output.field}")
     private String queryOutputField;
+
+    @org.springframework.beans.factory.annotation.Value("${solr.client.type}")
+    private String solrClientType;
+
+    @org.springframework.beans.factory.annotation.Value("${solr.default.collection}")
+    private String defaultCollection;
+
+    @org.springframework.beans.factory.annotation.Value("${solr.update.default.collection}")
+    private boolean updateCollection;
 
     private Map<String, String> OmtdOpenAIREMap = new HashMap<>();
     private Map<String, String> OmtdFacetLabels = new HashMap<>();
@@ -96,15 +106,17 @@ public class OpenAireContentConnector implements ContentConnector {
         try {
             Integer.parseInt(queryLimit);
 
-            TimerTask timerTask = new TimerTask() {
-                @Override
-                public void run() {
-                    updateDefaultConnection();
-                }
-            };
+            if (updateCollection) {
+                TimerTask timerTask = new TimerTask() {
+                    @Override
+                    public void run() {
+                        updateDefaultConnection();
+                    }
+                };
 
-            Timer timer = new Timer(true);
-            timer.schedule(timerTask, 0, period);
+                Timer timer = new Timer(true);
+                timer.schedule(timerTask, 0, period);
+            }
         } catch (NumberFormatException e) {
             log.error("OpenAireContentConnector: Wrong solr query limit number!", e);
         }
@@ -117,22 +129,19 @@ public class OpenAireContentConnector implements ContentConnector {
      */
     @Override
     public SearchResult search(Query query) {
-
-        SearchResult searchResult = new SearchResult();
         final String FACET_DOCUMENT_TYPE_FIELD = "documentType";
         final String FACET_DOCUMENT_TYPE_LABEL = "Document Type";
         final String FACET_DOCUMENT_TYPE_COUNT_NAME = "fullText";
 
+        SearchResult searchResult = new SearchResult();
         try {
             Parser parser = new Parser();
             buildParams(query);
             buildFacets(query);
             buildFields(query);
 
-            OpenAireSolrClient solrClient = new OpenAireSolrClient();
-            solrClient.setHosts(hosts);
-            solrClient.setQueryLimit(Integer.parseInt(queryLimit));
-            solrClient.setDefaultCollection(defaultCollection);
+            OpenAireSolrClient solrClient = getOpenAireSolrClient();
+            assert (solrClient != null);
 
             QueryResponse response = solrClient.query(query);
 
@@ -170,7 +179,8 @@ public class OpenAireContentConnector implements ContentConnector {
                 // TODO: xml validation for the initial queries is needed and yet the oaf xsd has issues
                 // leaving xml validation for as feature in future commit
 
-                String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + document.getFieldValue(queryOutputField).toString().replaceAll("\\[|\\]", "");
+                String xml = document.getFieldValue(queryOutputField).toString().replaceAll("\\[|\\]", "");
+                xml = xml.trim();
                 parser.parse(new InputSource(new StringReader(xml)));
                 searchResult.getPublications().add(parser.getOMTDPublication());
             }
@@ -212,16 +222,12 @@ public class OpenAireContentConnector implements ContentConnector {
 
         PipedInputStream inputStream = new PipedInputStream();
         PipedOutputStream outputStream = new PipedOutputStream();
-        final OpenAireSolrClient client;
+        final OpenAireSolrClient client = getOpenAireSolrClient();
 
         try {
-
-            client = new OpenAireSolrClient();
-            client.setDefaultCollection(defaultCollection);
-            client.setHosts(hosts);
-            client.setQueryLimit(Integer.parseInt(queryLimit));
             new Thread(() -> {
                 try {
+                    if (client == null) return;
                     client.fetchMetadata(query, new OpenAireStreamingResponseCallback(outputStream, queryOutputField));
                     outputStream.flush();
                     outputStream.write("</OMTDPublications>\n".getBytes());
@@ -474,5 +480,19 @@ public class OpenAireContentConnector implements ContentConnector {
 
             log.error("Error parsing value - ParserConfigurationException", e);
         }
+    }
+
+    private OpenAireSolrClient getOpenAireSolrClient() {
+
+        assert (solrClientType.equalsIgnoreCase(CloudSolrClient.class.getName())
+                || solrClientType.equalsIgnoreCase(HttpSolrClient.class.getName()));
+
+        if (solrClientType.equalsIgnoreCase(CloudSolrClient.class.getName()))
+            return new OpenAireSolrClient(CloudSolrClient.class.getName(), hosts, defaultCollection, Integer.parseInt(queryLimit));
+        else if (solrClientType.equalsIgnoreCase(HttpSolrClient.class.getName())) {
+            return new OpenAireSolrClient(HttpSolrClient.class.getName(), hosts, defaultCollection, Integer.parseInt(queryLimit));
+        }
+
+        return null;
     }
 }

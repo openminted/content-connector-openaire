@@ -26,8 +26,7 @@ public class OpenAireStreamingResponseCallback extends StreamingResponseCallback
     public void streamSolrDocument(SolrDocument solrDocument) {
         try {
             Parser parser = new Parser();
-            String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-                    + solrDocument.getFieldValue(outputField).toString()
+            String xml = solrDocument.getFieldValue(outputField).toString()
                     .replaceAll("\\[|\\]", "");
             parser.parse(new InputSource(new StringReader(xml)));
             outputStream.write(parser.getOMTDPublication().getBytes());
