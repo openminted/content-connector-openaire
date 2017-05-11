@@ -67,11 +67,11 @@ public class OpenAireContentConnectorTest {
 //        query.getParams().get("publicationYear").add("2012");
         query.setKeyword("*:*");
         query.setFacets(new ArrayList<>());
-        query.getFacets().add("Licence");
-        query.getFacets().add("resulttypename");
-//        query.getFacets().add("publicationYear");
+//        query.getFacets().add("Licence");
+//        query.getFacets().add("resulttypename");
+        query.getFacets().add("publicationYear");
 //        query.getFacets().add("DocumentLanguage");
-        query.getFacets().add("PublicationType");
+//        query.getFacets().add("PublicationType");
 
         while (openAireContentConnector.getDefaultCollection() == null || openAireContentConnector.getDefaultCollection().isEmpty())
             Thread.sleep(1000);

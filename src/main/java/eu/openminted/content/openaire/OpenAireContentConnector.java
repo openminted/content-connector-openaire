@@ -154,7 +154,7 @@ public class OpenAireContentConnector implements ContentConnector {
             if (response.getFacetFields() != null) {
                 for (FacetField facetField : response.getFacetFields()) {
                     Facet facet = buildFacet(facetField);
-                    if (facet != null) {
+                    if (facet != null && facet.getValues() != null && facet.getValues().size() > 0) {
                         if (!facets.containsKey(facet.getField())) {
                             facets.put(facet.getField(), facet);
                         }
