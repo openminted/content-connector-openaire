@@ -60,6 +60,10 @@ public class OpenAireContentConnector implements ContentConnector {
     private Map<String, String> OmtdOpenAIREMap = new HashMap<>();
     private Map<String, String> OmtdFacetLabels = new HashMap<>();
 
+    /*
+        Default constructor instantiates the inner Maps that are needed
+        to convert the OpenAire fields to the corresponding OMTD
+     */
     public OpenAireContentConnector() {
         String PUBLICATION_TYPE = "publicationType";
         String PUBLICATION_YEAR = "publicationYear";
@@ -91,9 +95,9 @@ public class OpenAireContentConnector implements ContentConnector {
         OmtdFacetLabels.put(DOCUMENT_LANG, "Language");
     }
 
-    /***
-     * Spring initialization method.
-     * Start timer to update defaultConnection. Time period is set to 10 minutes.
+    /**
+      Spring initialization method.
+      Start timer to update defaultConnection. Time period is set to 10 minutes.
      */
     @PostConstruct
     public void init() {
@@ -113,10 +117,10 @@ public class OpenAireContentConnector implements ContentConnector {
         }
     }
 
-    /***
-     * Search method for browsing metadata
-     * @param query the query as inserted in Content-OpenAireContentConnector-Service
-     * @return SearchResult with metadata and facets
+    /**
+      Search method for browsing metadata
+      @param query the query as inserted in Content-OpenAireContentConnector-Service
+      @return SearchResult with metadata and facets
      */
     @Override
     public SearchResult search(Query query) {
@@ -179,10 +183,10 @@ public class OpenAireContentConnector implements ContentConnector {
         return searchResult;
     }
 
-    /***
-     * Method for downloading fullText linked pdf
-     * @param s the ID of the metadata
-     * @return the pdf in the form of InputStream
+    /**
+      Method for downloading fullText linked pdf
+      @param s the ID of the metadata
+      @return the pdf in the form of InputStream
      */
     @Override
     public InputStream downloadFullText(String s) {
@@ -197,10 +201,10 @@ public class OpenAireContentConnector implements ContentConnector {
         return inputStream;
     }
 
-    /***
-     * Method for downloading metadata where the query's criteria are applicable
-     * @param query the query as inserted in Content-OpenAireContentConnector-Service
-     * @return The metadata in the form of InputStream
+    /**
+      Method for downloading metadata where the query's criteria are applicable
+      @param query the query as inserted in Content-OpenAireContentConnector-Service
+      @return The metadata in the form of InputStream
      */
     @Override
     public InputStream fetchMetadata(Query query) {
@@ -249,9 +253,9 @@ public class OpenAireContentConnector implements ContentConnector {
         return inputStream;
     }
 
-    /***
-     * Method that returns the name of the connector
-     * @return OpenAIRE
+    /**
+      Method that returns the name of the connector
+      @return OpenAIRE
      */
     @Override
     public String getSourceName() {
@@ -274,10 +278,10 @@ public class OpenAireContentConnector implements ContentConnector {
         this.defaultCollection = defaultCollection;
     }
 
-    /***
-     * Creates an individual OMTD Facet from an OpenAIRE FacetField of a SearchResult
-     * @param facetField the OpenAIRE FacetField of the SearchResult
-     * @return OMTD Facet
+    /**
+      Creates an individual OMTD Facet from an OpenAIRE FacetField of a SearchResult
+      @param facetField the OpenAIRE FacetField of the SearchResult
+      @return OMTD Facet
      */
     private Facet buildFacet(FacetField facetField) {
 
@@ -300,12 +304,12 @@ public class OpenAireContentConnector implements ContentConnector {
         return facet;
     }
 
-    /***
-     * Creates an individual OMTD Facet
-     * @param field facet's name
-     * @param countName count's name
-     * @param countValue count's value
-     * @return OMTD Facet
+    /**
+      Creates an individual OMTD Facet
+      @param field facet's name
+      @param countName count's name
+      @param countValue count's value
+      @return OMTD Facet
      */
     private Facet buildFacet(String field, String label, String countName, int countValue) {
         Facet facet = new Facet();
@@ -322,9 +326,9 @@ public class OpenAireContentConnector implements ContentConnector {
         return facet;
     }
 
-    /***
-     * Converts OMTD facets to OpenAIRE facets suitable for
-     * @param query the query as inserted in Content-OpenAireContentConnector-Service
+    /**
+      Converts OMTD facets to OpenAIRE facets suitable for
+      @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
     private void buildFacets(Query query) {
 
@@ -341,9 +345,9 @@ public class OpenAireContentConnector implements ContentConnector {
         }
     }
 
-    /***
-     * Converts OMTD parameters to OpenAIRE parameters
-     * @param query the query as inserted in Content-OpenAireContentConnector-Service
+    /**
+      Converts OMTD parameters to OpenAIRE parameters
+      @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
     private void buildParams(Query query) {
 
@@ -359,10 +363,10 @@ public class OpenAireContentConnector implements ContentConnector {
         }
     }
 
-    /***
-     * Adds field parameter `fl` and adds necessary value of queryOutputField (now `__result`)
-     * for the OpenAIRE index query
-     * @param query the query as inserted in Content-OpenAireContentConnector-Service
+    /**
+      Adds field parameter `fl` and adds necessary value of queryOutputField (now `__result`)
+      for the OpenAIRE index query
+      @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
     private void buildFields(Query query) {
 
@@ -378,9 +382,9 @@ public class OpenAireContentConnector implements ContentConnector {
         }
     }
 
-    /***
-     * Adds sorting parameter for the query
-     * @param query the query as inserted in Content-OpenAireContentConnector-Service
+    /**
+      Adds sorting parameter for the query
+      @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
     private void buildSort(Query query) {
 
@@ -395,8 +399,8 @@ public class OpenAireContentConnector implements ContentConnector {
         }
     }
 
-    /***
-     * Updates defaultConnection by querying services.openaire.eu
+    /**
+      Updates defaultConnection by querying services.openaire.eu profile
      */
     protected void updateDefaultConnection() {
         InputStream inputStream;

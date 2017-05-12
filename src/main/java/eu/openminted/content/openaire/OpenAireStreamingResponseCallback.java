@@ -22,6 +22,10 @@ public class OpenAireStreamingResponseCallback extends StreamingResponseCallback
         outputField = field;
     }
 
+    /**
+     * Override method to write to the PipedOutputStream object a parsed SolrDocument as OMTD Publication
+     * @param solrDocument
+     */
     @Override
     public void streamSolrDocument(SolrDocument solrDocument) {
         try {
@@ -34,8 +38,8 @@ public class OpenAireStreamingResponseCallback extends StreamingResponseCallback
         }
         catch (SAXException | JAXBException | ParserConfigurationException e) {
             log.error("OpenAireStreamingResponseCallback.streamSolrDocument", e);
-        }
-        catch (IOException e) {
+
+        } catch (IOException e) {
             try {
                 outputStream.close();
             } catch (IOException e1) {

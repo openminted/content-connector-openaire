@@ -34,6 +34,9 @@ public class OpenAireSolrClient implements AutoCloseable {
 
     private String type;
 
+    /*
+        Hide default constructor
+     */
     private OpenAireSolrClient() {
     }
 
@@ -44,10 +47,10 @@ public class OpenAireSolrClient implements AutoCloseable {
         this.queryLimit = queryLimit;
     }
 
-    /***
-     * Search method for browsing metadata
-     * @param query the query as inserted in Content-OpenAireContentConnector-Service
-     * @return QueryResponse with metadata and facets
+    /**
+      Search method for browsing metadata
+      @param query the query as inserted in Content-OpenAireContentConnector-Service
+      @return QueryResponse with metadata and facets
      */
     public QueryResponse query(Query query) {
 
@@ -64,9 +67,9 @@ public class OpenAireSolrClient implements AutoCloseable {
         return queryResponse;
     }
 
-    /***
-     * Method for downloading metadata where the query's criteria are applicable
-     * @param query the query as inserted in Content-OpenAireContentConnector-Service
+    /**
+      Method for downloading metadata where the query's criteria are applicable
+      @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
     public void fetchMetadata(Query query, StreamingResponseCallback streamingResponseCallback) throws IOException {
         if (streamingResponseCallback == null) return;
@@ -98,9 +101,9 @@ public class OpenAireSolrClient implements AutoCloseable {
         }
     }
 
-    /***
-     * Method to index a SolrInputDocument
-     * @param solrInputDocument the document that is going to be indexed
+    /**
+      Method to index a SolrInputDocument
+      @param solrInputDocument the document that is going to be indexed
      */
     public void add(SolrInputDocument solrInputDocument) {
         try (SolrClient solrClient = getSolrClient()) {
@@ -113,10 +116,10 @@ public class OpenAireSolrClient implements AutoCloseable {
         }
     }
 
-    /***
-     * Converts the query to the equivalent SolrQuery
-     * @param query the query as inserted in Content-OpenAireContentConnector-Service
-     * @return the SolrQuery that corresponds to input query.
+    /**
+     Converts the query to the equivalent SolrQuery
+     @param query the query as inserted in Content-OpenAireContentConnector-Service
+     @return the SolrQuery that corresponds to input query.
      */
     public SolrQuery queryBuilder(Query query) {
         String FILTER_QUERY_RESULT_TYPE_NAME = "resulttypename:publication";
@@ -217,6 +220,11 @@ public class OpenAireSolrClient implements AutoCloseable {
         return solrQuery;
     }
 
+    /**
+      Instantiates the SolrClient object that is used in the search/fetchMetadata methods, <br>
+      according to the type of the connection of the Solr Index (Cloud /w Zookeeper or Http)
+      @return SolrClient object instantiated as CloudSolrClient or HttpSolrClient
+     */
     private SolrClient getSolrClient() {
         SolrClient solrClient;
         switch (type.toLowerCase()) {
@@ -233,6 +241,11 @@ public class OpenAireSolrClient implements AutoCloseable {
         return solrClient;
     }
 
+    /**
+      Override The close method of the AutoCloseable interface. <br>
+      This is useful to use OpenAireSolrClient in a try-catch with resources block
+      @throws Exception
+     */
     @Override
     public void close() throws Exception {
 

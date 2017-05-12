@@ -9,6 +9,9 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.IOException;
 
+/**
+ * Default Parser class to parse OpenAire publication to OMTD publication
+ */
 class Parser {
     private PublicationResultHandler handler;
 
