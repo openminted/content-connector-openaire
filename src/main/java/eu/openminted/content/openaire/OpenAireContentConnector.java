@@ -6,8 +6,6 @@ import eu.openminted.content.connector.SearchResult;
 import eu.openminted.registry.domain.Facet;
 import eu.openminted.registry.domain.Value;
 import org.apache.log4j.Logger;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -44,8 +42,8 @@ public class OpenAireContentConnector implements ContentConnector {
     @org.springframework.beans.factory.annotation.Value("${solr.hosts}")
     private String hosts;
 
-    @org.springframework.beans.factory.annotation.Value("${solr.query.limit}")
-    private String queryLimit;
+    @org.springframework.beans.factory.annotation.Value("${solr.query.limit:0}")
+    private Integer queryLimit;
 
     @org.springframework.beans.factory.annotation.Value("${solr.query.output.field}")
     private String queryOutputField;
@@ -102,23 +100,16 @@ public class OpenAireContentConnector implements ContentConnector {
         // awaiting period is 10 minutes
         final long period = (long) 10 * 60 * 1000;
 
-        // Assert that query limit is a proper integer
-        try {
-            Integer.parseInt(queryLimit);
+        if (updateCollection) {
+            TimerTask timerTask = new TimerTask() {
+                @Override
+                public void run() {
+                    updateDefaultConnection();
+                }
+            };
 
-            if (updateCollection) {
-                TimerTask timerTask = new TimerTask() {
-                    @Override
-                    public void run() {
-                        updateDefaultConnection();
-                    }
-                };
-
-                Timer timer = new Timer(true);
-                timer.schedule(timerTask, 0, period);
-            }
-        } catch (NumberFormatException e) {
-            log.error("OpenAireContentConnector: Wrong solr query limit number!", e);
+            Timer timer = new Timer(true);
+            timer.schedule(timerTask, 0, period);
         }
     }
 
@@ -134,16 +125,14 @@ public class OpenAireContentConnector implements ContentConnector {
         final String FACET_DOCUMENT_TYPE_COUNT_NAME = "fullText";
 
         SearchResult searchResult = new SearchResult();
-        try {
+        try (OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection, queryLimit)) {
+
             Parser parser = new Parser();
             buildParams(query);
             buildFacets(query);
             buildFields(query);
 
-            OpenAireSolrClient solrClient = getOpenAireSolrClient();
-            assert (solrClient != null);
-
-            QueryResponse response = solrClient.query(query);
+            QueryResponse response = openAireSolrClient.query(query);
 
             searchResult.setFrom((int) response.getResults().getStart());
             searchResult.setTo((int) response.getResults().getStart() + response.getResults().size());
@@ -222,16 +211,14 @@ public class OpenAireContentConnector implements ContentConnector {
 
         PipedInputStream inputStream = new PipedInputStream();
         PipedOutputStream outputStream = new PipedOutputStream();
-        final OpenAireSolrClient client = getOpenAireSolrClient();
 
         try {
             new Thread(() -> {
-                try {
-                    if (client == null) return;
-                    client.fetchMetadata(query, new OpenAireStreamingResponseCallback(outputStream, queryOutputField));
+                try (OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection, queryLimit)) {
+                    openAireSolrClient.fetchMetadata(query, new OpenAireStreamingResponseCallback(outputStream, queryOutputField));
                     outputStream.flush();
                     outputStream.write("</OMTDPublications>\n".getBytes());
-                } catch (IOException e) {
+                } catch (Exception e) {
                     log.info("Fetching metadata has been interrupted. See debug for details!");
                     log.debug("OpenAireSolrClient.fetchMetadata", e);
                 } finally {
@@ -480,19 +467,5 @@ public class OpenAireContentConnector implements ContentConnector {
 
             log.error("Error parsing value - ParserConfigurationException", e);
         }
-    }
-
-    private OpenAireSolrClient getOpenAireSolrClient() {
-
-        assert (solrClientType.equalsIgnoreCase(CloudSolrClient.class.getName())
-                || solrClientType.equalsIgnoreCase(HttpSolrClient.class.getName()));
-
-        if (solrClientType.equalsIgnoreCase(CloudSolrClient.class.getName()))
-            return new OpenAireSolrClient(CloudSolrClient.class.getName(), hosts, defaultCollection, Integer.parseInt(queryLimit));
-        else if (solrClientType.equalsIgnoreCase(HttpSolrClient.class.getName())) {
-            return new OpenAireSolrClient(HttpSolrClient.class.getName(), hosts, defaultCollection, Integer.parseInt(queryLimit));
-        }
-
-        return null;
     }
 }

@@ -6,7 +6,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -21,15 +20,18 @@ import java.util.List;
 import java.util.TimeZone;
 
 @SuppressWarnings("WeakerAccess")
-public class OpenAireSolrClient {
+public class OpenAireSolrClient implements AutoCloseable {
     private static Logger log = Logger.getLogger(OpenAireContentConnector.class.getName());
 
     private int rows = 10;
     private int start = 0;
 
     private String defaultCollection;
+
     private String hosts;
-    private int queryLimit = 0;
+
+    private int queryLimit;
+
     private String type;
 
     private OpenAireSolrClient() {
@@ -48,24 +50,16 @@ public class OpenAireSolrClient {
      * @return QueryResponse with metadata and facets
      */
     public QueryResponse query(Query query) {
+
         QueryResponse queryResponse = null;
         SolrQuery solrQuery = queryBuilder(query);
-        SolrClient solrClient = getSolrClient();
 
-        assert (solrClient != null);
-
-        try {
+        try (SolrClient solrClient = getSolrClient()) {
             if (defaultCollection != null && !defaultCollection.isEmpty()) {
                 queryResponse = solrClient.query(defaultCollection, solrQuery);
             }
         } catch (SolrServerException | IOException e) {
             log.error(e);
-        } finally {
-            try {
-                solrClient.close();
-            } catch (IOException e) {
-                log.error("Inner message", e);
-            }
         }
         return queryResponse;
     }
@@ -82,8 +76,6 @@ public class OpenAireSolrClient {
         boolean done = false;
 
         try (SolrClient solrClient = getSolrClient()) {
-
-            assert (solrClient != null);
 
             int count = 0;
             while (!done && !(queryLimit > 0 && count >= queryLimit)) {
@@ -110,17 +102,14 @@ public class OpenAireSolrClient {
      * Method to index a SolrInputDocument
      * @param solrInputDocument the document that is going to be indexed
      */
-    public void commit(SolrInputDocument solrInputDocument) {
-        try {
-            String localHost = "http://adonis.athenarc.gr:8983/solr/adonis-index-openaire/";
-
-            HttpSolrClient solrClient = new HttpSolrClient.Builder(localHost).build();
-            solrClient.setRequestWriter(new BinaryRequestWriter());
-
-            solrClient.add(solrInputDocument);
-            solrClient.commit();
-        } catch (IOException | SolrServerException e) {
-            e.printStackTrace();
+    public void add(SolrInputDocument solrInputDocument) {
+        try (SolrClient solrClient = getSolrClient()) {
+            solrClient.add(defaultCollection, solrInputDocument);
+            solrClient.commit(defaultCollection);
+        } catch (IOException e) {
+            log.error("OpenAireSolrClient.IOException", e);
+        } catch (SolrServerException e) {
+            log.error("OpenAireSolrClient.SolrServerException", e);
         }
     }
 
@@ -229,11 +218,23 @@ public class OpenAireSolrClient {
     }
 
     private SolrClient getSolrClient() {
-        if (type.equalsIgnoreCase(CloudSolrClient.class.getName())) {
-            return new CloudSolrClient.Builder().withZkHost(hosts).build();
-        } else if (type.equalsIgnoreCase(HttpSolrClient.class.getName())) {
-            return new HttpSolrClient.Builder(hosts).build();
+        SolrClient solrClient;
+        switch (type.toLowerCase()) {
+            case "cloud":
+                solrClient = new CloudSolrClient.Builder().withZkHost(hosts).build();
+                break;
+            case "http":
+                solrClient = new HttpSolrClient.Builder(hosts).build();
+                break;
+                default:
+                    throw new IllegalArgumentException("No such SolrClient type");
         }
-        return null;
+
+        return solrClient;
+    }
+
+    @Override
+    public void close() throws Exception {
+
     }
 }

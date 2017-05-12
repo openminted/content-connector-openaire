@@ -110,11 +110,11 @@ public class OpenAireContentConnectorTest {
         query.setParams(new HashMap<>());
 
         query.getParams().put("licence", new ArrayList<>());
-        query.getParams().get("licence").add("Embargo");
+        query.getParams().get("licence").add("Open Access");
 
         query.getParams().put("sort", new ArrayList<>());
         query.getParams().get("sort").add("__indexrecordidentifier asc");
-        query.setKeyword("digital");
+        query.setKeyword("*:*");
         query.setFacets(new ArrayList<>());
         query.getFacets().add("Licence");
         query.getFacets().add("DocumentLanguage");
