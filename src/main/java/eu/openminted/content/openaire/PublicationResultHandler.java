@@ -501,9 +501,11 @@ public class PublicationResultHandler extends DefaultHandler {
          */
         else if (qName.equalsIgnoreCase("url")) {
             if (!value.trim().isEmpty()) {
-                if (hasIndexInfo)
-                    System.out.println(value);
-                else {
+                //todo: check whether this 'if' check is useful or not
+                if (hasIndexInfo) {
+                    documentDistributionInfo.getDistributionMediums().add(DistributionMediumEnum.DOWNLOADABLE);
+                    documentDistributionInfo.getDownloadURLs().add(value);
+                } else {
                     documentDistributionInfo.getDistributionMediums().add(DistributionMediumEnum.DOWNLOADABLE);
                     documentDistributionInfo.getDownloadURLs().add(value);
                 }
@@ -603,11 +605,14 @@ public class PublicationResultHandler extends DefaultHandler {
         else if (qName.equalsIgnoreCase("indexinfo")) {
             hasIndexInfo = false;
         } else if (qName.equalsIgnoreCase("hashkey")) {
-            if (hasIndexInfo)
+            if (hasIndexInfo) {
+                //todo import new schema in order to pass the hashKey in the distributionInfo element
                 System.out.println(value);
+            }
         } else if (qName.equalsIgnoreCase("mimetype")) {
-            if (hasIndexInfo)
-                System.out.println(value);
+            if (hasIndexInfo) {
+                documentDistributionInfo.getMimeTypes().add(MimeTypeEnum.fromValue(value));
+            }
         }
     }
 
