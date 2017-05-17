@@ -138,12 +138,14 @@ public class OpenAireContentConnectorTest {
         Query query = new Query();
         query.setParams(new HashMap<>());
 
-        query.getParams().put("fq", new ArrayList<>());
-        query.getParams().get("fq").add("licence:Embargo");
+        query.getParams().put("licence", new ArrayList<>());
+        query.getParams().get("licence").add("Open Access");
+        query.getParams().put("__indexrecordidentifier", new ArrayList<>());
+        query.getParams().get("__indexrecordidentifier").add("jairo_______::c18df4def4d30069e9557d686023675e");
 
         query.getParams().put("sort", new ArrayList<>());
         query.getParams().get("sort").add("__indexrecordidentifier asc");
-        query.setKeyword("digital");
+        query.setKeyword("*:*");
         query.setFacets(new ArrayList<>());
         query.getFacets().add("Licence");
         query.getFacets().add("DocumentLanguage");
@@ -171,9 +173,77 @@ public class OpenAireContentConnectorTest {
                 System.out.println(identifier);
 
                 // Find Abstracts from imported node
-                XPathExpression abstractListExpression = xpath.compile("document/publication/abstracts/abstract/text()");
-                String abstracts = (String) abstractListExpression.evaluate(imported, XPathConstants.STRING);
-                System.out.println(abstracts);
+                XPathExpression abstractListExpression = xpath.compile("document/publication/abstracts/abstract");
+                NodeList abstracts = (NodeList) abstractListExpression.evaluate(imported, XPathConstants.NODESET);
+
+                for (int j = 0; j < abstracts.getLength(); j++) {
+                    Node node = abstracts.item(j);
+                    if (node != null)
+                        System.out.println(node.getTextContent());
+                }
+            }
+        }
+    }
+
+    @Test
+    @Ignore
+    public void fetchFullTexts() throws Exception {
+        Query query = new Query();
+        query.setParams(new HashMap<>());
+
+        query.getParams().put("licence", new ArrayList<>());
+        query.getParams().get("licence").add("Open Access");
+//        query.getParams().put("__indexrecordidentifier", new ArrayList<>());
+//        query.getParams().get("__indexrecordidentifier").add("jairo_______::c18df4def4d30069e9557d686023675e");
+
+        query.getParams().put("sort", new ArrayList<>());
+        query.getParams().get("sort").add("__indexrecordidentifier asc");
+        query.setKeyword("*:*");
+        query.setFacets(new ArrayList<>());
+        query.getFacets().add("Licence");
+        query.getFacets().add("DocumentLanguage");
+        query.getFacets().add("PublicationType");
+
+        while (openAireContentConnector.getDefaultCollection() == null || openAireContentConnector.getDefaultCollection().isEmpty())
+            Thread.sleep(1000);
+
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        XPath xpath = XPathFactory.newInstance().newXPath();
+
+        Document currentDoc;
+        NodeList nodes;
+        currentDoc = dbf.newDocumentBuilder().newDocument();
+
+        InputStream inputStream = openAireContentConnector.fetchMetadata(query);
+        Document doc = dbf.newDocumentBuilder().parse(inputStream);
+        nodes = (NodeList) xpath.evaluate("//OMTDPublications/documentMetadataRecord", doc, XPathConstants.NODESET);
+        if (nodes != null) {
+            for (int i = 0; i < nodes.getLength(); i++) {
+                Node imported = currentDoc.importNode(nodes.item(i), true);
+                XPathExpression identifierExpression = xpath.compile("metadataHeaderInfo/metadataRecordIdentifier/text()");
+                String identifier = (String) identifierExpression.evaluate(imported, XPathConstants.STRING);
+
+                System.out.println(identifier);
+
+                // Find Abstracts from imported node
+                XPathExpression downloadUrlsListExpression = xpath.compile("document/publication/distributions/documentDistributionInfo/downloadURLs/downloadURL");
+
+                NodeList downloadUrls = (NodeList) downloadUrlsListExpression.evaluate(imported, XPathConstants.NODESET);
+
+                for (int j = 0; j < downloadUrls.getLength(); j++) {
+                    Node downloadUrl = downloadUrls.item(j);
+                    if (downloadUrl != null) {
+
+                        URL url = new URL(downloadUrl.getTextContent());
+                        URLConnection connection = url.openConnection();
+                        connection.connect();
+                        String contentType = connection.getContentType();
+                        System.out.println(contentType);
+
+                        if (contentType.toLowerCase().contains("html")) continue;
+                        System.out.println(downloadUrl.getTextContent());
+                    }
+                }
             }
         }
     }
@@ -181,13 +251,18 @@ public class OpenAireContentConnectorTest {
     @Test
     @Ignore
     public void downloadFullText() throws Exception {
-        InputStream inputStream = openAireContentConnector.downloadFullText("od_______165::00000090f0a93f19f8fb17252976f1fb");
         String line;
-        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-        while ((line = br.readLine()) != null) {
-            System.out.println(line);
+        InputStream inputStream = openAireContentConnector.downloadFullText("jairo_______::c18df4def4d30069e9557d686023675e");
+//        InputStream inputStream = openAireContentConnector.downloadFullText("od_______165::00000090f0a93f19f8fb17252976f1fb");
+        if (inputStream != null) {
+            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+            while ((line = br.readLine()) != null) {
+                System.out.println(line);
+            }
+            br.close();
+        } else {
+            System.out.println("Publication doesn't contain a valid document");
         }
-        br.close();
     }
 
     @Test

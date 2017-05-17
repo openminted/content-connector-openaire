@@ -11,6 +11,8 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -18,10 +20,7 @@ import javax.annotation.PostConstruct;
 import javax.net.ssl.*;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
+import javax.xml.xpath.*;
 import java.io.*;
 import java.net.*;
 import java.security.KeyManagementException;
@@ -122,6 +121,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
     /**
      * Search method for browsing metadata
+     *
      * @param query the query as inserted in Content-OpenAireContentConnector-Service
      * @return SearchResult with metadata and facets
      */
@@ -188,6 +188,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
     /**
      * Method for downloading fullText linked pdf
+     *
      * @param s the ID of the metadata
      * @return the pdf in the form of InputStream
      */
@@ -195,17 +196,65 @@ public class OpenAireContentConnector implements ContentConnector {
     public InputStream downloadFullText(String s) {
         InputStream inputStream = null;
         try {
-            inputStream = new URL("http://adonis.athenarc.gr/pdfs/" + s + ".pdf").openStream();
+            Query query = new Query();
+            query.setParams(new HashMap<>());
+            query.getParams().put("__indexrecordidentifier", new ArrayList<>());
+            query.getParams().get("__indexrecordidentifier").add(s);
+            query.setKeyword("*:*");
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            XPath xpath = XPathFactory.newInstance().newXPath();
+
+            Document currentDoc;
+            NodeList nodes;
+            currentDoc = dbf.newDocumentBuilder().newDocument();
+
+            InputStream openaireInputStream = fetchMetadata(query);
+            Document doc = dbf.newDocumentBuilder().parse(openaireInputStream);
+            nodes = (NodeList) xpath.evaluate("//OMTDPublications/documentMetadataRecord", doc, XPathConstants.NODESET);
+            if (nodes != null) {
+                for (int i = 0; i < nodes.getLength(); i++) {
+                    Node imported = currentDoc.importNode(nodes.item(i), true);
+
+                    // Find DownloadUrls from imported node
+                    XPathExpression downloadUrlsListExpression = xpath.compile("document/publication/distributions/documentDistributionInfo/downloadURLs/downloadURL");
+                    NodeList downloadUrls = (NodeList) downloadUrlsListExpression.evaluate(imported, XPathConstants.NODESET);
+
+                    for (int j = 0; j < downloadUrls.getLength(); j++) {
+                        Node downloadUrl = downloadUrls.item(j);
+                        if (downloadUrl != null) {
+                            try {
+                                URL url = new URL(downloadUrl.getTextContent());
+                                URLConnection connection = url.openConnection();
+                                connection.connect();
+                                String contentType = connection.getContentType();
+                                if (contentType.toLowerCase().contains("html")) continue;
+                                inputStream = url.openStream();
+                                break;
+
+                            } catch (IOException e) {
+                                log.error("downloadFullText: Error while streaming document. Proceeding to next document if any!");
+                            }
+                        }
+                    }
+                }
+            }
         } catch (MalformedURLException e) {
             log.error("downloadFullText: MalformedURLException ", e);
         } catch (IOException e) {
             log.error("downloadFullText: IOException ", e);
+        } catch (ParserConfigurationException e) {
+            log.error("downloadFullText: ParserConfigurationException ", e);
+        } catch (XPathExpressionException e) {
+            log.error("downloadFullText: XPathExpressionException ", e);
+        } catch (SAXException e) {
+            log.error("downloadFullText: SAXException ", e);
         }
         return inputStream;
     }
 
     /**
      * Method for downloading metadata where the query's criteria are applicable
+     *
      * @param query the query as inserted in Content-OpenAireContentConnector-Service
      * @return The metadata in the form of InputStream
      */
@@ -258,6 +307,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
     /**
      * Method that returns the name of the connector
+     *
      * @return OpenAIRE
      */
     @Override
@@ -267,6 +317,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
     /**
      * Creates an individual OMTD Facet from an OpenAIRE FacetField of a SearchResult
+     *
      * @param facetField the OpenAIRE FacetField of the SearchResult
      * @return OMTD Facet
      */
@@ -293,8 +344,9 @@ public class OpenAireContentConnector implements ContentConnector {
 
     /**
      * Creates an individual OMTD Facet
-     * @param field facet's name
-     * @param countName count's name
+     *
+     * @param field      facet's name
+     * @param countName  count's name
      * @param countValue count's value
      * @return OMTD Facet
      */
@@ -315,6 +367,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
     /**
      * Converts OMTD facets to OpenAIRE facets suitable for
+     *
      * @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
     private void buildFacets(Query query) {
@@ -334,6 +387,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
     /**
      * Converts OMTD parameters to OpenAIRE parameters
+     *
      * @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
     private void buildParams(Query query) {
@@ -343,6 +397,8 @@ public class OpenAireContentConnector implements ContentConnector {
             for (String key : query.getParams().keySet()) {
                 if (OmtdOpenAIREMap.containsKey(key.toLowerCase())) {
                     openAireParams.put(OmtdOpenAIREMap.get(key.toLowerCase()), new ArrayList<>(query.getParams().get(key)));
+                } else {
+                    openAireParams.put(key.toLowerCase(), new ArrayList<>(query.getParams().get(key)));
                 }
             }
 
@@ -353,6 +409,7 @@ public class OpenAireContentConnector implements ContentConnector {
     /**
      * Adds field parameter `fl` and adds necessary value of queryOutputField (now `__result`)
      * for the OpenAIRE index query
+     *
      * @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
     private void buildFields(Query query) {
@@ -371,6 +428,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
     /**
      * Adds sorting parameter for the query
+     *
      * @param query the query as inserted in Content-OpenAireContentConnector-Service
      */
     private void buildSort(Query query) {
@@ -380,7 +438,8 @@ public class OpenAireContentConnector implements ContentConnector {
             query.getParams().put("sort", new ArrayList<>());
             query.getParams().get("sort").add("__indexrecordidentifier desc");
         } else {
-            if (!query.getParams().get("sort").contains("__indexrecordidentifier desc")) {
+            if (!query.getParams().get("sort").contains("__indexrecordidentifier desc")
+                    && !query.getParams().get("sort").contains("__indexrecordidentifier asc")) {
                 query.getParams().get("sort").add("__indexrecordidentifier desc");
             }
         }
