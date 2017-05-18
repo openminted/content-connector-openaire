@@ -227,7 +227,6 @@ public class OpenAireContentConnectorTest {
 
                 // Find Abstracts from imported node
                 XPathExpression downloadUrlsListExpression = xpath.compile("document/publication/distributions/documentDistributionInfo/downloadURLs/downloadURL");
-
                 NodeList downloadUrls = (NodeList) downloadUrlsListExpression.evaluate(imported, XPathConstants.NODESET);
 
                 for (int j = 0; j < downloadUrls.getLength(); j++) {
