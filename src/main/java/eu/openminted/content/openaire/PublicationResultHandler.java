@@ -28,10 +28,10 @@ public class PublicationResultHandler extends DefaultHandler {
     private MetadataIdentifier metadataIdentifier;
     private PublicationIdentifier publicationIdentifier;
     private Title title;
-    private RelatedPerson author;
+    private PersonInfo author;
     private DocumentDistributionInfo documentDistributionInfo;
     private RightsInfo rightsInfo;
-    private RelatedJournal relatedJournal;
+    private JournalInfo relatedJournal;
 
     private String description = "";
     private String value = "";
@@ -62,7 +62,7 @@ public class PublicationResultHandler extends DefaultHandler {
         documentMetadataRecord.setMetadataHeaderInfo(metadataHeaderInfo);
         documentMetadataRecord.setDocument(document);
         rightsInfo = new RightsInfo();
-        relatedJournal = new RelatedJournal();
+        relatedJournal = new JournalInfo();
     }
 
     @Override
@@ -75,7 +75,7 @@ public class PublicationResultHandler extends DefaultHandler {
             /*
                 Set by default the document type to abstract until we find a solution to this
              */
-            documentMetadataRecord.getDocument().getPublication().setDocumentType(DocumentTypeEnum.FULL_TEXT);
+            documentMetadataRecord.getDocument().getPublication().setDocumentType(DocumentTypeEnum.WITH_FULL_TEXT);
         }
         /*
             Title
@@ -107,7 +107,7 @@ public class PublicationResultHandler extends DefaultHandler {
             switch (resultRelationsEnum) {
                 case HAS_AUTHOR:
                     hasAuthor = true;
-                    author = new RelatedPerson();
+                    author = new PersonInfo();
                     break;
                 default:
                     hasAuthor = false;
@@ -248,16 +248,18 @@ public class PublicationResultHandler extends DefaultHandler {
         else if (qName.equalsIgnoreCase("bestlicense")) {
             String classid = attributes.getValue("classid");
             String classname = attributes.getValue("classname");
+            LicenceInfos licenceInfos = new LicenceInfos();
             LicenceInfo licenceInfo = new LicenceInfo();
             licenceInfo.setLicence(LicenceEnum.NON_STANDARD_LICENCE_TERMS);
             licenceInfo.setNonStandardLicenceTermsURL(classid);
+            licenceInfos.getLicenceInfo().add(licenceInfo);
 
-            RightsStatementInfo rightsStatementInfo = new RightsStatementInfo();
-            rightsStatementInfo.setRightsStmtURL("http://api.openaire.eu/vocabularies/dnet:access_modes");
-            rightsStatementInfo.setRightsStmtName(RightsStmtNameConverter.convert(classname));
+//            RightsInfo rightsStatementInfo = new RightsInfo();
+//            rightsStatementInfo..setRightsStmtURL("http://api.openaire.eu/vocabularies/dnet:access_modes");
+//            rightsStatementInfo.setRightsStmtName(RightsStmtNameConverter.convert(classname));
 
-            rightsInfo.getLicenceInfos().add(licenceInfo);
-            rightsInfo.setRightsStatementInfo(rightsStatementInfo);
+            rightsInfo.getLicenceInfos().add(licenceInfos);
+//            rightsInfo.setRightsStatementInfo(rightsStatementInfo);
         }
         /*
             Journal
@@ -269,23 +271,23 @@ public class PublicationResultHandler extends DefaultHandler {
             String lissn = attributes.getValue("lissn");
 
             if (publication.getJournal() == null) {
-                publication.setJournal(new RelatedJournal());
+                publication.setJournal(new JournalInfo());
             }
 
             if (eissn != null && !eissn.isEmpty()) {
                 JournalIdentifier journalIdentifier = new JournalIdentifier();
                 journalIdentifier.setValue(eissn);
-                publication.getJournal().getJournalIdentifiers().add(journalIdentifier);
+                publication.getJournal().getIdentifiers().add(journalIdentifier);
             }
             if (issn != null && !issn.isEmpty()) {
                 JournalIdentifier journalIdentifier = new JournalIdentifier();
                 journalIdentifier.setValue(issn);
-                publication.getJournal().getJournalIdentifiers().add(journalIdentifier);
+                publication.getJournal().getIdentifiers().add(journalIdentifier);
             }
             if (lissn != null && !lissn.isEmpty()) {
                 JournalIdentifier journalIdentifier = new JournalIdentifier();
                 journalIdentifier.setValue(lissn);
-                publication.getJournal().getJournalIdentifiers().add(journalIdentifier);
+                publication.getJournal().getIdentifiers().add(journalIdentifier);
             }
         }
         /*
@@ -420,13 +422,16 @@ public class PublicationResultHandler extends DefaultHandler {
             End of fullname
          */
         else if (qName.equalsIgnoreCase("fullname")) {
-            PersonName personName = new PersonName();
+            Name personName = new Name();
             personName.setValue(value);
             if (author == null) {
-                author = new RelatedPerson();
+                author = new PersonInfo();
             }
 
-            author.getPersonNames().add(personName);
+            Names names = new Names();
+            names.getName().add(personName);
+
+            author.getNames().add(names);
             value = "";
         }
         /*
@@ -484,14 +489,14 @@ public class PublicationResultHandler extends DefaultHandler {
          */
         else if (qName.equalsIgnoreCase("publisher")) {
             if (!hasRelation && !value.trim().isEmpty()) {
-                ActorInfo actorInfo = new ActorInfo();
-                RelatedOrganization relatedOrganization = new RelatedOrganization();
+//                ActorInfo actorInfo = new ActorInfo();
+                OrganizationInfo relatedOrganization = new OrganizationInfo();
                 OrganizationName organizationName = new OrganizationName();
                 organizationName.setValue(value.trim());
 
                 relatedOrganization.getOrganizationNames().add(organizationName);
-                actorInfo.setRelatedOrganization(relatedOrganization);
-                publication.setPublisher(actorInfo);
+//                actorInfo.setRelatedOrganization(relatedOrganization);
+                publication.setPublisher(relatedOrganization);
                 value = "";
             }
         }
@@ -562,8 +567,8 @@ public class PublicationResultHandler extends DefaultHandler {
          */
         else if (qName.equalsIgnoreCase("contributor")) {
             if (!value.trim().isEmpty()) {
-                Contributor contributor = new Contributor();
-                RelatedOrganization relatedOrganization = new RelatedOrganization();
+                ActorInfo contributor = new ActorInfo();
+                OrganizationInfo relatedOrganization = new OrganizationInfo();
                 OrganizationName organizationName = new OrganizationName();
                 organizationName.setValue(value);
 
@@ -611,7 +616,9 @@ public class PublicationResultHandler extends DefaultHandler {
             }
         } else if (qName.equalsIgnoreCase("mimetype")) {
             if (hasIndexInfo) {
-                documentDistributionInfo.getMimeTypes().add(MimeTypeEnum.fromValue(value));
+                DataFormatInfo dataFormatInfo = new DataFormatInfo();
+                dataFormatInfo.setMimeType(MimeTypeEnum.fromValue(value));
+                documentDistributionInfo.getDataFormats().add(dataFormatInfo);
             }
         }
     }
