@@ -127,6 +127,13 @@ public class OpenAireContentConnector implements ContentConnector {
      */
     @Override
     public SearchResult search(Query query) {
+
+        if (query == null) {
+            query = new Query("*:*", new HashMap<>(), new ArrayList<>(), 0, 1);
+        } else if (query.getKeyword() == null || query.getKeyword().isEmpty()) {
+            query.setKeyword("*:*");
+        }
+
         final String FACET_DOCUMENT_TYPE_FIELD = "documentType";
         final String FACET_DOCUMENT_TYPE_LABEL = "Document Type";
         final String FACET_DOCUMENT_TYPE_COUNT_NAME = "fullText";
@@ -260,18 +267,30 @@ public class OpenAireContentConnector implements ContentConnector {
      */
     @Override
     public InputStream fetchMetadata(Query query) {
+
+        if (query == null) {
+            query = new Query("*:*", new HashMap<>(), new ArrayList<>(), 0, 1);
+        } else if (query.getKeyword() == null || query.getKeyword().isEmpty()) {
+            query.setKeyword("*:*");
+        }
+
+
+        // Setting query rows up to 500 for improving speed between fetching and importing metadata
+        query.setTo(500);
+
         buildParams(query);
         buildFacets(query);
         buildFields(query);
         buildSort(query);
 
+        final Query openaireQuery = query;
         PipedInputStream inputStream = new PipedInputStream();
         PipedOutputStream outputStream = new PipedOutputStream();
 
         try {
             new Thread(() -> {
                 try (OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection, queryLimit)) {
-                    openAireSolrClient.fetchMetadata(query, new OpenAireStreamingResponseCallback(outputStream, queryOutputField));
+                    openAireSolrClient.fetchMetadata(openaireQuery, new OpenAireStreamingResponseCallback(outputStream, queryOutputField));
                     outputStream.flush();
                     outputStream.write("</OMTDPublications>\n".getBytes());
                 } catch (Exception e) {
