@@ -32,6 +32,7 @@ public class PublicationResultHandler extends DefaultHandler {
     private DocumentDistributionInfo documentDistributionInfo;
     private RightsInfo rightsInfo;
     private JournalInfo relatedJournal;
+    private DataFormatInfo dataFormatInfo;
 
     private String description = "";
     private String value = "";
@@ -300,6 +301,7 @@ public class PublicationResultHandler extends DefaultHandler {
             indexinfo
          */
         else if (qName.equalsIgnoreCase("indexinfo")) {
+            dataFormatInfo = new DataFormatInfo();
             value = "";
             hasIndexInfo = true;
         } else if (qName.equalsIgnoreCase("hashkey")) {
@@ -609,16 +611,14 @@ public class PublicationResultHandler extends DefaultHandler {
          */
         else if (qName.equalsIgnoreCase("indexinfo")) {
             hasIndexInfo = false;
+            documentDistributionInfo.getDataFormats().add(dataFormatInfo);
         } else if (qName.equalsIgnoreCase("hashkey")) {
             if (hasIndexInfo) {
-                //todo import new schema in order to pass the hashKey in the distributionInfo element
-                System.out.println(value);
+                documentDistributionInfo.setHashkey(value);
             }
         } else if (qName.equalsIgnoreCase("mimetype")) {
             if (hasIndexInfo) {
-                DataFormatInfo dataFormatInfo = new DataFormatInfo();
                 dataFormatInfo.setMimeType(MimeTypeEnum.fromValue(value));
-                documentDistributionInfo.getDataFormats().add(dataFormatInfo);
             }
         }
     }
