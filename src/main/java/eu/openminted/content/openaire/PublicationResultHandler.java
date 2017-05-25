@@ -196,6 +196,12 @@ public class PublicationResultHandler extends DefaultHandler {
 
 
             Language language = new Language();
+
+            // Check this hashMap to convert openaire ISO 639-2 to omtd ISO 639-1 (or ISO 639-3)
+            if (LanguageConverter.getInstance().getOpenaireToOMTDName().containsKey(classname)) {
+                classname = LanguageConverter.getInstance().getOpenaireToOMTDName().get(classname);
+            }
+
             if (LanguageConverter.getInstance().getLangNameToCode().containsKey(classname)) {
                 classid = LanguageConverter.getInstance().getLangNameToCode().get(classname);
             } else {
