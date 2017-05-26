@@ -147,10 +147,32 @@ public class OpenAireContentConnector implements ContentConnector {
             buildFields(query);
 
             QueryResponse response = openAireSolrClient.query(query);
+            searchResult.setPublications(new ArrayList<>());
 
-            searchResult.setFrom((int) response.getResults().getStart());
-            searchResult.setTo((int) response.getResults().getStart() + response.getResults().size());
-            searchResult.setTotalHits((int) response.getResults().getNumFound());
+            if (response.getResults() != null) {
+                searchResult.setFrom((int) response.getResults().getStart());
+                searchResult.setTo((int) response.getResults().getStart() + response.getResults().size());
+                searchResult.setTotalHits((int) response.getResults().getNumFound());
+
+                for (SolrDocument document : response.getResults()) {
+                    // TODO: The getFieldName to get the result should be given as input
+                    // There may be more than one fields, yet we care only for the result
+                    // It would be nice, if this field is the only field needed, to be set once
+                    // from a properties file.
+
+                    // TODO: xml validation for the initial queries is needed and yet the oaf xsd has issues
+                    // leaving xml validation for as feature in future commit
+
+                    String xml = document.getFieldValue(queryOutputField).toString().replaceAll("\\[|\\]", "");
+                    xml = xml.trim();
+                    parser.parse(new InputSource(new StringReader(xml)));
+                    searchResult.getPublications().add(parser.getOMTDPublication());
+                }
+            } else {
+                searchResult.setFrom(query.getFrom());
+                searchResult.setTo(query.getFrom());
+                searchResult.setTotalHits(0);
+            }
 
             Map<String, Facet> facets = new HashMap<>();
 
@@ -171,22 +193,6 @@ public class OpenAireContentConnector implements ContentConnector {
             }
 
             searchResult.setFacets(new ArrayList<>(facets.values()));
-            searchResult.setPublications(new ArrayList<>());
-
-            for (SolrDocument document : response.getResults()) {
-                // TODO: The getFieldName to get the result should be given as input
-                // There may be more than one fields, yet we care only for the result
-                // It would be nice, if this field is the only field needed, to be set once
-                // from a properties file.
-
-                // TODO: xml validation for the initial queries is needed and yet the oaf xsd has issues
-                // leaving xml validation for as feature in future commit
-
-                String xml = document.getFieldValue(queryOutputField).toString().replaceAll("\\[|\\]", "");
-                xml = xml.trim();
-                parser.parse(new InputSource(new StringReader(xml)));
-                searchResult.getPublications().add(parser.getOMTDPublication());
-            }
         } catch (Exception e) {
             log.error("OpenAireContentConnector.search", e);
         }

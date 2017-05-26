@@ -53,7 +53,7 @@ public class OpenAireSolrClient implements AutoCloseable {
      */
     public QueryResponse query(Query query) {
 
-        QueryResponse queryResponse = null;
+        QueryResponse queryResponse = new QueryResponse();
         SolrQuery solrQuery = queryBuilder(query);
 
         try (SolrClient solrClient = getSolrClient()) {
@@ -200,7 +200,7 @@ public class OpenAireSolrClient implements AutoCloseable {
                     } else {
                         StringBuilder fieldQuery = new StringBuilder();
                         for (String val : vals) {
-                            fieldQuery.append(key).append(":").append("\"" + val + "\"").append(" OR ");
+                            fieldQuery.append(key).append(":").append("\"").append(val).append("\"").append(" OR ");
                         }
                         fieldQuery = new StringBuilder(fieldQuery.toString().replaceAll(" OR $", ""));
                         solrQuery.addFilterQuery(fieldQuery.toString());
@@ -243,7 +243,7 @@ public class OpenAireSolrClient implements AutoCloseable {
     /**
      * Override The close method of the AutoCloseable interface. <br>
      * This is useful to use OpenAireSolrClient in a try-catch with resources block
-     * @throws Exception
+     * @throws Exception generic Exception
      */
     @Override
     public void close() throws Exception {
