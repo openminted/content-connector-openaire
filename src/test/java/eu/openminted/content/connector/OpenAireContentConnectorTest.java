@@ -114,6 +114,11 @@ public class OpenAireContentConnectorTest {
 
         query.getParams().put("sort", new ArrayList<>());
         query.getParams().get("sort").add("__indexrecordidentifier asc");
+
+        query.getParams().put("__indexrecordidentifier", new ArrayList<>());
+        query.getParams().get("__indexrecordidentifier").add("od________18::7ff13d895bc479a9143760e3ed68b6ed");
+
+
         query.setKeyword("*:*");
         query.setFacets(new ArrayList<>());
         query.getFacets().add("Licence");
