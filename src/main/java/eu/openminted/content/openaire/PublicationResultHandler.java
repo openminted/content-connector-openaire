@@ -319,253 +319,255 @@ public class PublicationResultHandler extends DefaultHandler {
 
     @Override
     public void endElement(String uri, String localName, String qName) throws SAXException {
+
+        try {
         /*
             End of DocumentMetadataRecord element (end of current publication)
             For the time being it prints the xml as a string
          */
-        if (qName.equalsIgnoreCase("result")) {
-            StringWriter sw = new StringWriter();
-            try {
-                jaxbMarshaller.marshal(documentMetadataRecord, sw);
-                OMTDPublication = sw.toString() + "\n";
-            } catch (JAXBException e) {
-                log.error("PublicationResultHandler.endElement@result", e);
+            if (qName.equalsIgnoreCase("result")) {
+                StringWriter sw = new StringWriter();
+                try {
+                    jaxbMarshaller.marshal(documentMetadataRecord, sw);
+                    OMTDPublication = sw.toString() + "\n";
+                } catch (JAXBException e) {
+                    log.error("PublicationResultHandler.endElement@result", e);
+                }
             }
-        }
         /*
             MetadataInfo
          */
-        else if (qName.equalsIgnoreCase("dri:objIdentifier")) {
-            documentMetadataRecord.getMetadataHeaderInfo().getMetadataRecordIdentifier().setValue(value);
-            value = "";
-        }
+            else if (qName.equalsIgnoreCase("dri:objIdentifier")) {
+                documentMetadataRecord.getMetadataHeaderInfo().getMetadataRecordIdentifier().setValue(value);
+                value = "";
+            }
         /*
             MetadataCreationDate
             End of dri:dateOfCollection element
          */
-        else if (qName.equalsIgnoreCase("dri:dateOfCollection")) {
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-            if (!value.trim().isEmpty()) {
-                try {
-                    java.util.Date date = simpleDateFormat.parse(value);
-                    GregorianCalendar gregorianCalendar = new GregorianCalendar();
-                    gregorianCalendar.setTime(date);
-                    XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
-                    documentMetadataRecord.getMetadataHeaderInfo().setMetadataCreationDate(xmlGregorianCalendar);
-                } catch (ParseException | DatatypeConfigurationException e) {
-                    simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                    java.util.Date date;
+            else if (qName.equalsIgnoreCase("dri:dateOfCollection")) {
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                if (!value.trim().isEmpty()) {
                     try {
-                        date = simpleDateFormat.parse(value);
-
+                        java.util.Date date = simpleDateFormat.parse(value);
                         GregorianCalendar gregorianCalendar = new GregorianCalendar();
                         gregorianCalendar.setTime(date);
                         XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
                         documentMetadataRecord.getMetadataHeaderInfo().setMetadataCreationDate(xmlGregorianCalendar);
-                    } catch (ParseException | DatatypeConfigurationException e1) {
-                        log.error("PublicationResultHandler.dateOfCollection", e1);
+                    } catch (ParseException | DatatypeConfigurationException e) {
+                        simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                        java.util.Date date;
+                        try {
+                            date = simpleDateFormat.parse(value);
+
+                            GregorianCalendar gregorianCalendar = new GregorianCalendar();
+                            gregorianCalendar.setTime(date);
+                            XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
+                            documentMetadataRecord.getMetadataHeaderInfo().setMetadataCreationDate(xmlGregorianCalendar);
+                        } catch (ParseException | DatatypeConfigurationException e1) {
+                            log.error("PublicationResultHandler.dateOfCollection", e1);
+                        }
                     }
                 }
             }
-        }
         /*
             MetadataLastDateUpdated
             End of dri:dateOfTransformation element
          */
-        else if (qName.equalsIgnoreCase("dri:dateOfTransformation")) {
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-            if (!value.trim().isEmpty()) {
-                try {
-                    java.util.Date date = simpleDateFormat.parse(value);
-                    GregorianCalendar gregorianCalendar = new GregorianCalendar();
-                    gregorianCalendar.setTime(date);
-                    XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
-                    documentMetadataRecord.getMetadataHeaderInfo().setMetadataLastDateUpdated(xmlGregorianCalendar);
-                } catch (ParseException | DatatypeConfigurationException e) {
-                    simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            else if (qName.equalsIgnoreCase("dri:dateOfTransformation")) {
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                if (!value.trim().isEmpty()) {
                     try {
                         java.util.Date date = simpleDateFormat.parse(value);
                         GregorianCalendar gregorianCalendar = new GregorianCalendar();
                         gregorianCalendar.setTime(date);
                         XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
                         documentMetadataRecord.getMetadataHeaderInfo().setMetadataLastDateUpdated(xmlGregorianCalendar);
-                    } catch (ParseException | DatatypeConfigurationException e1) {
-                        log.error("PublicationResultHandler.dateOfTransformation", e1);
+                    } catch (ParseException | DatatypeConfigurationException e) {
+                        simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                        try {
+                            java.util.Date date = simpleDateFormat.parse(value);
+                            GregorianCalendar gregorianCalendar = new GregorianCalendar();
+                            gregorianCalendar.setTime(date);
+                            XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
+                            documentMetadataRecord.getMetadataHeaderInfo().setMetadataLastDateUpdated(xmlGregorianCalendar);
+                        } catch (ParseException | DatatypeConfigurationException e1) {
+                            log.error("PublicationResultHandler.dateOfTransformation", e1);
+                        }
                     }
                 }
             }
-        }
         /*
             End of title element
             Title elements can be found within a <rel> element.
             Notice that OMTD title is the one NOT within a <rel> element.
          */
-        else if (qName.equalsIgnoreCase("title")) {
-            // If title is within a <rel> element, hasRelation should be true, otherwise it is false
-            if (!hasRelation) {
-                title.setValue(value);
-                publication.getTitles().add(title);
+            else if (qName.equalsIgnoreCase("title")) {
+                // If title is within a <rel> element, hasRelation should be true, otherwise it is false
+                if (!hasRelation) {
+                    title.setValue(value);
+                    publication.getTitles().add(title);
+                    value = "";
+                }
+            } else if (qName.equalsIgnoreCase("pid")) {
+                publicationIdentifier.setValue(value);
+                publication.getIdentifiers().add(publicationIdentifier);
                 value = "";
             }
-        } else if (qName.equalsIgnoreCase("pid")) {
-            publicationIdentifier.setValue(value);
-            publication.getIdentifiers().add(publicationIdentifier);
-            value = "";
-        }
         /*
             PersonIdentifier
             End of <to> of the <rel> element
          */
-        else if (qName.equalsIgnoreCase("to")) {
-            if (hasAuthor) {
-                PersonIdentifier personIdentifier = new PersonIdentifier();
-                personIdentifier.setPersonIdentifierSchemeName(PersonIdentifierSchemeNameEnum.OTHER);
-                personIdentifier.setValue(value);
-                author.getPersonIdentifiers().add(personIdentifier);
-                value = "";
+            else if (qName.equalsIgnoreCase("to")) {
+                if (hasAuthor) {
+                    PersonIdentifier personIdentifier = new PersonIdentifier();
+                    personIdentifier.setPersonIdentifierSchemeName(PersonIdentifierSchemeNameEnum.OTHER);
+                    personIdentifier.setValue(value);
+                    author.getPersonIdentifiers().add(personIdentifier);
+                    value = "";
+                }
             }
-        }
         /*
             PersonName
             End of fullname
          */
-        else if (qName.equalsIgnoreCase("fullname")) {
-            Name personName = new Name();
-            personName.setValue(value);
-            if (author == null) {
-                author = new PersonInfo();
+            else if (qName.equalsIgnoreCase("fullname")) {
+                Name personName = new Name();
+                personName.setValue(value);
+                if (author == null) {
+                    author = new PersonInfo();
+                }
+
+                Names names = new Names();
+                names.getName().add(personName);
+
+                author.getNames().add(names);
+                value = "";
             }
-
-            Names names = new Names();
-            names.getName().add(personName);
-
-            author.getNames().add(names);
-            value = "";
-        }
         /*
             Author
             End of rel element
          */
-        else if (qName.equalsIgnoreCase("rel")) {
-            hasRelation = false;
-            if (hasAuthor) {
-                hasAuthor = false;
-                publication.getAuthors().add(author);
+            else if (qName.equalsIgnoreCase("rel")) {
+                hasRelation = false;
+                if (hasAuthor) {
+                    hasAuthor = false;
+                    publication.getAuthors().add(author);
+                }
             }
-        }
         /*
             PublicationDate
             End of dateofacceptance element
          */
-        else if (qName.equalsIgnoreCase("dateofacceptance")) {
-            // In case dateofacceptance element is within a rel element, hasRelation should be true, otherwise it is false
-            if (!hasRelation) {
-                Date date = new Date();
-                String[] dateOfAcceptance = value.split("-");
+            else if (qName.equalsIgnoreCase("dateofacceptance")) {
+                // In case dateofacceptance element is within a rel element, hasRelation should be true, otherwise it is false
+                if (!hasRelation) {
+                    Date date = new Date();
+                    String[] dateOfAcceptance = value.split("-");
 
-                try {
-                    switch (dateOfAcceptance.length) {
-                        case 1:
-                            if (!dateOfAcceptance[0].trim().isEmpty())
-                                date.setYear(Integer.valueOf(dateOfAcceptance[0].trim()));
-                            break;
-                        case 2:
-                            date.setYear(Integer.valueOf(dateOfAcceptance[0]));
-                            date.setMonth(Integer.valueOf(dateOfAcceptance[1]));
-                            break;
-                        case 3:
-                            date.setYear(Integer.valueOf(dateOfAcceptance[0]));
-                            date.setMonth(Integer.valueOf(dateOfAcceptance[1]));
-                            date.setDay(Integer.valueOf(dateOfAcceptance[2]));
-                            break;
-                        default:
-                            break;
+                    try {
+                        switch (dateOfAcceptance.length) {
+                            case 1:
+                                if (!dateOfAcceptance[0].trim().isEmpty())
+                                    date.setYear(Integer.valueOf(dateOfAcceptance[0].trim()));
+                                break;
+                            case 2:
+                                date.setYear(Integer.valueOf(dateOfAcceptance[0]));
+                                date.setMonth(Integer.valueOf(dateOfAcceptance[1]));
+                                break;
+                            case 3:
+                                date.setYear(Integer.valueOf(dateOfAcceptance[0]));
+                                date.setMonth(Integer.valueOf(dateOfAcceptance[1]));
+                                date.setDay(Integer.valueOf(dateOfAcceptance[2]));
+                                break;
+                            default:
+                                break;
+                        }
+
+                        publication.setPublicationDate(date);
+                    } catch (NumberFormatException ex) {
+                        log.error("Error parsing string:" + value);
                     }
-
-                    publication.setPublicationDate(date);
-                } catch (NumberFormatException ex) {
-                    log.error("Error parsing string:" + value);
+                    value = "";
                 }
-                value = "";
             }
-        }
         /*
             Publisher
             End of publisher element
             publisher refers to original publisher (element publisher)
             or to the collectedfrom publisher who actually gives the publicationIdentifier?
          */
-        else if (qName.equalsIgnoreCase("publisher")) {
-            if (!hasRelation && !value.trim().isEmpty()) {
+            else if (qName.equalsIgnoreCase("publisher")) {
+                if (!hasRelation && !value.trim().isEmpty()) {
 //                ActorInfo actorInfo = new ActorInfo();
-                OrganizationInfo relatedOrganization = new OrganizationInfo();
-                OrganizationName organizationName = new OrganizationName();
-                organizationName.setValue(value.trim());
+                    OrganizationInfo relatedOrganization = new OrganizationInfo();
+                    OrganizationName organizationName = new OrganizationName();
+                    organizationName.setValue(value.trim());
 
-                relatedOrganization.getOrganizationNames().add(organizationName);
+                    relatedOrganization.getOrganizationNames().add(organizationName);
 //                actorInfo.setRelatedOrganization(relatedOrganization);
-                publication.setPublisher(relatedOrganization);
-                value = "";
+                    publication.setPublisher(relatedOrganization);
+                    value = "";
+                }
             }
-        }
         /*
             DownloadURL
             End of url element
          */
-        else if (qName.equalsIgnoreCase("url")) {
-            if (!value.trim().isEmpty()) {
-                //todo: check whether this 'if' check is useful or not
-                if (hasIndexInfo) {
-                    documentDistributionInfo.getDistributionMediums().add(DistributionMediumEnum.DOWNLOADABLE);
-                    documentDistributionInfo.getDownloadURLs().add(value);
-                } else {
-                    documentDistributionInfo.getDistributionMediums().add(DistributionMediumEnum.DOWNLOADABLE);
-                    documentDistributionInfo.getDownloadURLs().add(value);
+            else if (qName.equalsIgnoreCase("url")) {
+                if (!value.trim().isEmpty()) {
+                    //todo: check whether this 'if' check is useful or not
+                    if (hasIndexInfo) {
+                        documentDistributionInfo.getDistributionMediums().add(DistributionMediumEnum.DOWNLOADABLE);
+                        documentDistributionInfo.getDownloadURLs().add(value);
+                    } else {
+                        documentDistributionInfo.getDistributionMediums().add(DistributionMediumEnum.DOWNLOADABLE);
+                        documentDistributionInfo.getDownloadURLs().add(value);
+                    }
+                    value = "";
                 }
-                value = "";
             }
-        }
         /*
             DistributionMedium
             End of webresource element
          */
-        else if (qName.equalsIgnoreCase("webresource")) {
-            // just in case there is none download url
-            if (documentDistributionInfo.getDownloadURLs().size() < 1)
-                documentDistributionInfo.getDistributionMediums().add(DistributionMediumEnum.OTHER);
+            else if (qName.equalsIgnoreCase("webresource")) {
+                // just in case there is none download url
+                if (documentDistributionInfo.getDownloadURLs().size() < 1)
+                    documentDistributionInfo.getDistributionMediums().add(DistributionMediumEnum.OTHER);
 
-            documentDistributionInfo.setRightsInfo(rightsInfo);
-            publication.getDistributions().add(documentDistributionInfo);
-        }
+                documentDistributionInfo.setRightsInfo(rightsInfo);
+                publication.getDistributions().add(documentDistributionInfo);
+            }
         /*
             Subjects and Keywords
             End of subject element
          */
-        else if (qName.equalsIgnoreCase("subject")) {
-            if (hasKeyword) {
-                publication.getKeywords().add(value);
-                hasKeyword = false;
-            } else if (hasSubject) {
-                Subject subject = new Subject();
-                subject.setValue(value);
-                subject.setClassificationSchemeName(ClassificationSchemeName.OTHER);
-                publication.getSubjects().add(subject);
-                hasSubject = false;
+            else if (qName.equalsIgnoreCase("subject")) {
+                if (hasKeyword) {
+                    publication.getKeywords().add(value);
+                    hasKeyword = false;
+                } else if (hasSubject) {
+                    Subject subject = new Subject();
+                    subject.setValue(value);
+                    subject.setClassificationSchemeName(ClassificationSchemeName.OTHER);
+                    publication.getSubjects().add(subject);
+                    hasSubject = false;
+                }
             }
-        }
         /*
             Abstract
             End of description
          */
-        else if (qName.equalsIgnoreCase("description")) {
-            if (hasAbstract) {
-                Abstract documentAbstract = new Abstract();
-                documentAbstract.setValue(description);
-                publication.getAbstracts().add(documentAbstract);
-                hasAbstract = false;
-                description = "";
+            else if (qName.equalsIgnoreCase("description")) {
+                if (hasAbstract) {
+                    Abstract documentAbstract = new Abstract();
+                    documentAbstract.setValue(description);
+                    publication.getAbstracts().add(documentAbstract);
+                    hasAbstract = false;
+                    description = "";
+                }
             }
-        }
         /*
             Contributor
             End of contributor
@@ -573,59 +575,62 @@ public class PublicationResultHandler extends DefaultHandler {
             Contributors are either RelatedPersons or RelatedOrganizations.
             It is not clear when the first or the latter is used, so I am using the second as default.
          */
-        else if (qName.equalsIgnoreCase("contributor")) {
-            if (!value.trim().isEmpty()) {
-                ActorInfo contributor = new ActorInfo();
-                OrganizationInfo relatedOrganization = new OrganizationInfo();
-                OrganizationName organizationName = new OrganizationName();
-                organizationName.setValue(value);
+            else if (qName.equalsIgnoreCase("contributor")) {
+                if (!value.trim().isEmpty()) {
+                    ActorInfo contributor = new ActorInfo();
+                    OrganizationInfo relatedOrganization = new OrganizationInfo();
+                    OrganizationName organizationName = new OrganizationName();
+                    organizationName.setValue(value);
 
-                relatedOrganization.getOrganizationNames().add(organizationName);
-                contributor.setRelatedOrganization(relatedOrganization);
+                    relatedOrganization.getOrganizationNames().add(organizationName);
+                    contributor.setRelatedOrganization(relatedOrganization);
 
-                publication.getContributors().add(contributor);
-                value = "";
+                    publication.getContributors().add(contributor);
+                    value = "";
+                }
             }
-        }
         /*
             Journal
          */
-        else if (qName.equalsIgnoreCase("journal")) {
-            if (!value.trim().isEmpty()) {
-                if (publication.getJournal() == null) publication.setJournal(relatedJournal);
-                JournalTitle journalTitle = new JournalTitle();
-                journalTitle.setValue(value);
-                publication.getJournal().getJournalTitles().add(journalTitle);
-                value = "";
+            else if (qName.equalsIgnoreCase("journal")) {
+                if (!value.trim().isEmpty()) {
+                    if (publication.getJournal() == null) publication.setJournal(relatedJournal);
+                    JournalTitle journalTitle = new JournalTitle();
+                    journalTitle.setValue(value);
+                    publication.getJournal().getJournalTitles().add(journalTitle);
+                    value = "";
+                }
             }
-        }
         /*
          fulltext
          */
-        else if (qName.equalsIgnoreCase("fulltext")) {
-            if (!value.trim().isEmpty()) {
-                if (publication.getJournal() == null) publication.setJournal(relatedJournal);
-                JournalTitle journalTitle = new JournalTitle();
-                journalTitle.setValue(value);
-                publication.getJournal().getJournalTitles().add(journalTitle);
-                value = "";
+            else if (qName.equalsIgnoreCase("fulltext")) {
+                if (!value.trim().isEmpty()) {
+                    if (publication.getJournal() == null) publication.setJournal(relatedJournal);
+                    JournalTitle journalTitle = new JournalTitle();
+                    journalTitle.setValue(value);
+                    publication.getJournal().getJournalTitles().add(journalTitle);
+                    value = "";
+                }
             }
-        }
         /*
             indexinfo
             url element is described in another case above
          */
-        else if (qName.equalsIgnoreCase("indexinfo")) {
-            hasIndexInfo = false;
-            documentDistributionInfo.getDataFormats().add(dataFormatInfo);
-        } else if (qName.equalsIgnoreCase("hashkey")) {
-            if (hasIndexInfo) {
-                documentDistributionInfo.setHashkey(value);
+            else if (qName.equalsIgnoreCase("indexinfo")) {
+                hasIndexInfo = false;
+                documentDistributionInfo.getDataFormats().add(dataFormatInfo);
+            } else if (qName.equalsIgnoreCase("hashkey")) {
+                if (hasIndexInfo) {
+                    documentDistributionInfo.setHashkey(value);
+                }
+            } else if (qName.equalsIgnoreCase("mimetype")) {
+                if (hasIndexInfo) {
+                    dataFormatInfo.setMimeType(MimeTypeEnum.fromValue(value));
+                }
             }
-        } else if (qName.equalsIgnoreCase("mimetype")) {
-            if (hasIndexInfo) {
-                dataFormatInfo.setMimeType(MimeTypeEnum.fromValue(value));
-            }
+        } catch (Exception e) {
+            log.error("Something went wrong", e);
         }
     }
 

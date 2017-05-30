@@ -249,6 +249,60 @@ public class OpenAireContentConnectorTest {
 
     @Test
     @Ignore
+    public void fetchHashKeys() throws Exception {
+        Query query = new Query();
+        query.setParams(new HashMap<>());
+
+        query.getParams().put("licence", new ArrayList<>());
+        query.getParams().get("licence").add("Open Access");
+//        query.getParams().put("__indexrecordidentifier", new ArrayList<>());
+//        query.getParams().get("__indexrecordidentifier").add("jairo_______::c18df4def4d30069e9557d686023675e");
+
+        query.getParams().put("sort", new ArrayList<>());
+        query.getParams().get("sort").add("__indexrecordidentifier asc");
+        query.setKeyword("hashkey");
+        query.setFacets(new ArrayList<>());
+        query.getFacets().add("Licence");
+        query.getFacets().add("DocumentLanguage");
+        query.getFacets().add("PublicationType");
+
+        while (openAireContentConnector.getDefaultCollection() == null || openAireContentConnector.getDefaultCollection().isEmpty())
+            Thread.sleep(1000);
+
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        XPath xpath = XPathFactory.newInstance().newXPath();
+
+        Document currentDoc;
+        NodeList nodes;
+        currentDoc = dbf.newDocumentBuilder().newDocument();
+
+        InputStream inputStream = openAireContentConnector.fetchMetadata(query);
+        Document doc = dbf.newDocumentBuilder().parse(inputStream);
+        nodes = (NodeList) xpath.evaluate("//OMTDPublications/documentMetadataRecord", doc, XPathConstants.NODESET);
+        if (nodes != null) {
+            for (int i = 0; i < nodes.getLength(); i++) {
+                Node imported = currentDoc.importNode(nodes.item(i), true);
+                XPathExpression identifierExpression = xpath.compile("metadataHeaderInfo/metadataRecordIdentifier/text()");
+                String identifier = (String) identifierExpression.evaluate(imported, XPathConstants.STRING);
+
+                System.out.println(identifier);
+
+                // Find hashkeys from imported node
+                XPathExpression distributionListExpression = xpath.compile("document/publication/distributions/documentDistributionInfo/hashkey");
+                NodeList hashkeys = (NodeList) distributionListExpression.evaluate(imported, XPathConstants.NODESET);
+
+                for (int j = 0; j < hashkeys.getLength(); j++) {
+                    Node hashkey = hashkeys.item(j);
+                    if (hashkey != null) {
+                        System.out.println(hashkey.getTextContent());
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    @Ignore
     public void downloadFullText() throws Exception {
         String line;
         InputStream inputStream = openAireContentConnector.downloadFullText("jairo_______::c18df4def4d30069e9557d686023675e");
