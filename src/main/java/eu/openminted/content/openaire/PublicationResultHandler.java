@@ -30,6 +30,7 @@ public class PublicationResultHandler extends DefaultHandler {
     private Title title;
     private PersonInfo author;
     private DocumentDistributionInfo documentDistributionInfo;
+    private DistributionLoc distributionLoc;
     private RightsInfo rightsInfo;
     private JournalInfo relatedJournal;
     private DataFormatInfo dataFormatInfo;
@@ -221,8 +222,10 @@ public class PublicationResultHandler extends DefaultHandler {
         else if (qName.equalsIgnoreCase("webresource")) {
             value = "";
             documentDistributionInfo = new DocumentDistributionInfo();
+            distributionLoc = new DistributionLoc();
         } else if (qName.equalsIgnoreCase("url")) {
             documentDistributionInfo = new DocumentDistributionInfo();
+            distributionLoc = new DistributionLoc();
             value = "";
         }
         /*
@@ -518,12 +521,14 @@ public class PublicationResultHandler extends DefaultHandler {
                 if (!value.trim().isEmpty()) {
                     //todo: check whether this 'if' check is useful or not
                     if (hasIndexInfo) {
-                        documentDistributionInfo.getDistributionMediums().add(DistributionMediumEnum.DOWNLOADABLE);
-                        documentDistributionInfo.getDownloadURLs().add(value);
+                        distributionLoc.setDistributionMedium(DistributionMediumEnum.DOWNLOADABLE);
+                        distributionLoc.setDistributionURL(value);
                     } else {
-                        documentDistributionInfo.getDistributionMediums().add(DistributionMediumEnum.DOWNLOADABLE);
-                        documentDistributionInfo.getDownloadURLs().add(value);
+                        distributionLoc.setDistributionMedium(DistributionMediumEnum.DOWNLOADABLE);
+                        distributionLoc.setDistributionURL(value);
                     }
+
+                    documentDistributionInfo.setDistributionLoc(distributionLoc);
                     value = "";
                 }
             }
@@ -532,10 +537,6 @@ public class PublicationResultHandler extends DefaultHandler {
             End of webresource element
          */
             else if (qName.equalsIgnoreCase("webresource")) {
-                // just in case there is none download url
-                if (documentDistributionInfo.getDownloadURLs().size() < 1)
-                    documentDistributionInfo.getDistributionMediums().add(DistributionMediumEnum.OTHER);
-
                 documentDistributionInfo.setRightsInfo(rightsInfo);
                 publication.getDistributions().add(documentDistributionInfo);
             }
@@ -619,7 +620,7 @@ public class PublicationResultHandler extends DefaultHandler {
          */
             else if (qName.equalsIgnoreCase("indexinfo")) {
                 hasIndexInfo = false;
-                documentDistributionInfo.getDataFormats().add(dataFormatInfo);
+                documentDistributionInfo.setDataFormatInfo(dataFormatInfo);
             } else if (qName.equalsIgnoreCase("hashkey")) {
                 if (hasIndexInfo) {
                     documentDistributionInfo.setHashkey(value);
