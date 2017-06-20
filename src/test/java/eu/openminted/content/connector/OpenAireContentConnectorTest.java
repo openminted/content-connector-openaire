@@ -310,7 +310,8 @@ public class OpenAireContentConnectorTest {
     @Ignore
     public void downloadFullText() throws Exception {
         String line;
-        InputStream inputStream = openAireContentConnector.downloadFullText("jairo_______::c18df4def4d30069e9557d686023675e");
+        InputStream inputStream = openAireContentConnector.downloadFullText("core_ac_uk__::0114f25b46c4b6d69f6067e82c285d1a");
+//        InputStream inputStream = openAireContentConnector.downloadFullText("jairo_______::c18df4def4d30069e9557d686023675e");
 //        InputStream inputStream = openAireContentConnector.downloadFullText("od_______165::00000090f0a93f19f8fb17252976f1fb");
         if (inputStream != null) {
             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));

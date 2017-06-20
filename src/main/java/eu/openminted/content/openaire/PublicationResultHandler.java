@@ -17,7 +17,9 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import java.io.StringWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.GregorianCalendar;
+import java.util.List;
 
 public class PublicationResultHandler extends DefaultHandler {
     private static Logger log = Logger.getLogger(PublicationResultHandler.class.getName());
@@ -261,15 +263,13 @@ public class PublicationResultHandler extends DefaultHandler {
             LicenceInfos licenceInfos = new LicenceInfos();
             LicenceInfo licenceInfo = new LicenceInfo();
             licenceInfo.setLicence(LicenceEnum.NON_STANDARD_LICENCE_TERMS);
-            licenceInfo.setNonStandardLicenceTermsURL(classid);
+            licenceInfo.setNonStandardLicenceTermsURL("http://api.openaire.eu/vocabularies/dnet:access_modes#" + classid);
             licenceInfos.getLicenceInfo().add(licenceInfo);
 
-//            RightsInfo rightsStatementInfo = new RightsInfo();
-//            rightsStatementInfo..setRightsStmtURL("http://api.openaire.eu/vocabularies/dnet:access_modes");
-//            rightsStatementInfo.setRightsStmtName(RightsStmtNameConverter.convert(classname));
-
+            List<RightsStatementEnum> rightsStatementEnumList = new ArrayList<>();
+            rightsStatementEnumList.add(RightsStmtNameConverter.convert(classname));
+            rightsInfo.setRightsStatement(rightsStatementEnumList);
             rightsInfo.getLicenceInfos().add(licenceInfos);
-//            rightsInfo.setRightsStatementInfo(rightsStatementInfo);
         }
         /*
             Journal
