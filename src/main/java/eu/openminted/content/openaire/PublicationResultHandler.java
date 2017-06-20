@@ -441,10 +441,7 @@ public class PublicationResultHandler extends DefaultHandler {
                     author = new PersonInfo();
                 }
 
-                Names names = new Names();
-                names.getName().add(personName);
-
-                author.getNames().add(names);
+                author.getNames().add(personName);
                 value = "";
             }
         /*
