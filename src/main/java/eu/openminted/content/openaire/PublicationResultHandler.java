@@ -519,10 +519,10 @@ public class PublicationResultHandler extends DefaultHandler {
                     //todo: check whether this 'if' check is useful or not
                     if (hasIndexInfo) {
                         distributionLoc.setDistributionMedium(DistributionMediumEnum.DOWNLOADABLE);
-                        distributionLoc.setDistributionURL(value);
+                        distributionLoc.setDistributionLocation(value);
                     } else {
                         distributionLoc.setDistributionMedium(DistributionMediumEnum.DOWNLOADABLE);
-                        distributionLoc.setDistributionURL(value);
+                        distributionLoc.setDistributionLocation(value);
                     }
 
                     documentDistributionInfo.setDistributionLoc(distributionLoc);

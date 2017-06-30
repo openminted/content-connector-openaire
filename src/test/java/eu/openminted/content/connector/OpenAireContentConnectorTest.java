@@ -45,7 +45,7 @@ public class OpenAireContentConnectorTest {
     private String getProfileUrl;
 
     @Test
-    @Ignore
+//    @Ignore
     public void search() throws Exception {
         // The way this test is implemented it supposes all of the following parameters enabled.
         // To alter the query by a parameter or field or facet
