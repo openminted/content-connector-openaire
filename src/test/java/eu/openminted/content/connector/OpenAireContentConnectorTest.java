@@ -2,8 +2,8 @@ package eu.openminted.content.connector;
 
 import eu.openminted.content.ConnectorConfiguration;
 import eu.openminted.content.openaire.OpenAireContentConnector;
-import eu.openminted.registry.domain.Facet;
-import eu.openminted.registry.domain.Value;
+import eu.openminted.registry.core.domain.Facet;
+import eu.openminted.registry.core.domain.Value;
 import org.apache.log4j.Logger;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -45,7 +45,7 @@ public class OpenAireContentConnectorTest {
     private String getProfileUrl;
 
     @Test
-//    @Ignore
+    @Ignore
     public void search() throws Exception {
         // The way this test is implemented it supposes all of the following parameters enabled.
         // To alter the query by a parameter or field or facet
