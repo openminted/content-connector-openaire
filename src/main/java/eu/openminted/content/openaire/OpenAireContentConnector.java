@@ -128,10 +128,9 @@ public class OpenAireContentConnector implements ContentConnector {
     @Override
     public SearchResult search(Query query) {
 
-        if (query == null) {
-            query = new Query("*:*", new HashMap<>(), new ArrayList<>(), 0, 1);
-        } else if (query.getKeyword() == null || query.getKeyword().isEmpty()) {
-            query.setKeyword("*:*");
+        Query tmpQuery = new Query(query.getKeyword(), query.getParams(), query.getFacets(), query.getFrom(), query.getTo());
+        if (tmpQuery.getKeyword() == null || tmpQuery.getKeyword().isEmpty()) {
+            tmpQuery.setKeyword("*:*");
         }
 
         final String FACET_DOCUMENT_TYPE_FIELD = "documentType";
@@ -142,11 +141,11 @@ public class OpenAireContentConnector implements ContentConnector {
         try (OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection, queryLimit)) {
 
             Parser parser = new Parser();
-            buildParams(query);
-            buildFacets(query);
-            buildFields(query);
+            buildParams(tmpQuery);
+            buildFacets(tmpQuery);
+            buildFields(tmpQuery);
 
-            QueryResponse response = openAireSolrClient.query(query);
+            QueryResponse response = openAireSolrClient.query(tmpQuery);
             searchResult.setPublications(new ArrayList<>());
 
             if (response.getResults() != null) {
@@ -310,22 +309,22 @@ public class OpenAireContentConnector implements ContentConnector {
     @Override
     public InputStream fetchMetadata(Query query) {
 
-        if (query == null) {
-            query = new Query("*:*", new HashMap<>(), new ArrayList<>(), 0, 1);
-        } else if (query.getKeyword() == null || query.getKeyword().isEmpty()) {
-            query.setKeyword("*:*");
+        Query tmpQuery = new Query(query.getKeyword(), query.getParams(), query.getFacets(), query.getFrom(), query.getTo());
+
+        if (tmpQuery.getKeyword() == null || tmpQuery.getKeyword().isEmpty()) {
+            tmpQuery.setKeyword("*:*");
         }
 
 
         // Setting query rows up to 500 for improving speed between fetching and importing metadata
-        query.setTo(500);
+        tmpQuery.setTo(1000);
 
-        buildParams(query);
-        buildFacets(query);
-        buildFields(query);
-        buildSort(query);
+        buildParams(tmpQuery);
+        buildFacets(tmpQuery);
+        buildFields(tmpQuery);
+        buildSort(tmpQuery);
 
-        final Query openaireQuery = query;
+        final Query openaireQuery = tmpQuery;
         PipedInputStream inputStream = new PipedInputStream();
         PipedOutputStream outputStream = new PipedOutputStream();
 
