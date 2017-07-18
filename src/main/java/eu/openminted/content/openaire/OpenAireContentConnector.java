@@ -47,9 +47,6 @@ public class OpenAireContentConnector implements ContentConnector {
     @org.springframework.beans.factory.annotation.Value("${solr.hosts}")
     private String hosts;
 
-    @org.springframework.beans.factory.annotation.Value("${solr.query.limit:0}")
-    private Integer queryLimit;
-
     @org.springframework.beans.factory.annotation.Value("${solr.query.output.field}")
     private String queryOutputField;
 
@@ -109,7 +106,7 @@ public class OpenAireContentConnector implements ContentConnector {
         final String FACET_DOCUMENT_TYPE_COUNT_NAME = "fullText";
 
         SearchResult searchResult = new SearchResult();
-        try (OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection, queryLimit)) {
+        try (OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection)) {
 
             Parser parser = new Parser();
             buildParams(tmpQuery);
@@ -189,7 +186,7 @@ public class OpenAireContentConnector implements ContentConnector {
             query.setKeyword("*:*");
 
 // this is newly added
-            try (OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection, queryLimit)) {
+            try (OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection)) {
                 QueryResponse response = openAireSolrClient.query(query);
                 if (response.getResults() != null) {
                     for (SolrDocument document : response.getResults()) {
@@ -304,7 +301,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
         try {
             new Thread(() -> {
-                try (OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection, queryLimit)) {
+                try (OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection)) {
                     openAireSolrClient.fetchMetadata(openaireQuery, new OpenAireStreamingResponseCallback(outputStream, queryOutputField));
                     outputStream.flush();
                     outputStream.write("</OMTDPublications>\n".getBytes());
