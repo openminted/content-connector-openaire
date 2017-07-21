@@ -377,8 +377,7 @@ public class OpenAireContentConnector implements ContentConnector {
                     else {
                         value.setValue(count.getName());
                     }
-                }
-                else if (field.equalsIgnoreCase(OMTDFacetEnum.PUBLICATION_TYPE.value())) {
+                } else if (field.equalsIgnoreCase(OMTDFacetEnum.PUBLICATION_TYPE.value())) {
                     PublicationTypeEnum publicationTypeEnum = PublicationTypeConverter.convert(count.getName());
 
                     if (omtdFacetInitializer.getOmtdPublicationTypeLabels().containsKey(publicationTypeEnum))
@@ -387,8 +386,7 @@ public class OpenAireContentConnector implements ContentConnector {
                     else {
                         value.setValue(count.getName());
                     }
-                }
-                else {
+                } else {
                     value.setValue(count.getName());
                 }
                 value.setCount((int) count.getCount());
@@ -450,14 +448,32 @@ public class OpenAireContentConnector implements ContentConnector {
     private void buildParams(Query query) {
 
         Map<String, List<String>> openAireParams = new HashMap<>();
+        OMTDFacetInitializer omtdFacetInitializer = new OMTDFacetInitializer();
         if (query.getParams() != null && query.getParams().size() > 0) {
             for (String key : query.getParams().keySet()) {
                 if (key.equalsIgnoreCase(OMTDFacetEnum.SOURCE.value())) continue;
                 if (key.equalsIgnoreCase(OMTDFacetEnum.DOCUMENT_TYPE.value())) continue;
-                if (omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().containsKey(key.toLowerCase())) {
-                    openAireParams.put(omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase()), new ArrayList<>(query.getParams().get(key)));
+
+                if (key.equalsIgnoreCase(OMTDFacetEnum.PUBLICATION_TYPE.value())) {
+                    ArrayList<String> publicationTypeValues = new ArrayList<>();
+                    for (String publicationType : query.getParams().get(key)) {
+                        PublicationTypeConverter.convert(publicationTypeValues, omtdFacetInitializer.getOmtdGetPublicationTypeEnumFromLabel().get(publicationType));
+                    }
+                    openAireParams.put(omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase()), new ArrayList<>(publicationTypeValues));
+                } else if (key.equalsIgnoreCase(OMTDFacetEnum.RIGHTS.value())) {
+                    ArrayList<String> rightsValues = new ArrayList<>();
+                    for (String rightsValue : query.getParams().get(key)) {
+                        RightsStmtNameConverter.convert(rightsValues, omtdFacetInitializer.getOmtdGetRightsStmtEnumFromLabel().get(rightsValue));
+                    }
+                    openAireParams.put(omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase()), new ArrayList<>(rightsValues));
                 } else {
-                    openAireParams.put(key.toLowerCase(), new ArrayList<>(query.getParams().get(key)));
+                    if (omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().containsKey(key.toLowerCase())) {
+                        openAireParams.put(omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase()), new ArrayList<>(query.getParams().get(key)));
+                    }
+
+//                else {
+//                    openAireParams.put(key.toLowerCase(), new ArrayList<>(query.getParams().get(key)));
+//                }
                 }
             }
 
