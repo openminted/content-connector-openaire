@@ -2,7 +2,6 @@ package eu.openminted.content.openaire;
 
 import eu.openminted.content.connector.ContentConnector;
 import eu.openminted.content.connector.Query;
-import eu.openminted.content.connector.RightsStmtNameConverter;
 import eu.openminted.content.connector.SearchResult;
 import eu.openminted.content.connector.faceting.OMTDFacetEnum;
 import eu.openminted.content.connector.faceting.OMTDFacetInitializer;
