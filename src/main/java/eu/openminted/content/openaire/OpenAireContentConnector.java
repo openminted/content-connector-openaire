@@ -52,6 +52,9 @@ public class OpenAireContentConnector implements ContentConnector {
     @org.springframework.beans.factory.annotation.Value("${solr.client.type}")
     private String solrClientType;
 
+    @org.springframework.beans.factory.annotation.Value("${content.limit:0}")
+    private Integer contentLimit;
+
     @org.springframework.beans.factory.annotation.Value("${solr.default.collection}")
     private String defaultCollection;
 
@@ -300,7 +303,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
         try {
             new Thread(() -> {
-                try (OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection)) {
+                try (OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection, contentLimit)) {
                     openAireSolrClient.fetchMetadata(openaireQuery, new OpenAireStreamingResponseCallback(outputStream, queryOutputField));
                     outputStream.flush();
                     outputStream.write("</OMTDPublications>\n".getBytes());

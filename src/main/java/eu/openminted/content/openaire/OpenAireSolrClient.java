@@ -31,6 +31,7 @@ public class OpenAireSolrClient implements AutoCloseable {
     private String defaultCollection;
     private String hosts;
     private String type;
+    private int limit = 0;
 
     /*
         Hide default constructor
@@ -42,6 +43,13 @@ public class OpenAireSolrClient implements AutoCloseable {
         this.type = type;
         this.hosts = hosts;
         this.defaultCollection = defaultCollection;
+    }
+
+    public OpenAireSolrClient(String type, String hosts, String defaultCollection, int limit) {
+        this.type = type;
+        this.hosts = hosts;
+        this.defaultCollection = defaultCollection;
+        this.limit = limit;
     }
 
     /**
@@ -74,6 +82,7 @@ public class OpenAireSolrClient implements AutoCloseable {
         SolrQuery solrQuery = queryBuilder(query);
         String cursorMark = CursorMarkParams.CURSOR_MARK_START;
         boolean done = false;
+        int count = 0;
 
         try (SolrClient solrClient = getSolrClient()) {
             while (!done) {
@@ -83,7 +92,9 @@ public class OpenAireSolrClient implements AutoCloseable {
                         streamingResponseCallback);
 
                 String nextCursorMark = rsp.getNextCursorMark();
-                if (cursorMark.equals(nextCursorMark)) {
+                count += solrQuery.getRows();
+
+                if (cursorMark.equals(nextCursorMark) || (limit > 0 && count >= limit)) {
                     done = true;
                 }
                 cursorMark = nextCursorMark;
