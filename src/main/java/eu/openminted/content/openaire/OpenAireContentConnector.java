@@ -187,7 +187,6 @@ public class OpenAireContentConnector implements ContentConnector {
             query.getParams().get("__indexrecordidentifier").add(s);
             query.setKeyword("*:*");
 
-// this is newly added
             try (OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection)) {
                 QueryResponse response = openAireSolrClient.query(query);
                 if (response.getResults() != null) {
@@ -213,50 +212,6 @@ public class OpenAireContentConnector implements ContentConnector {
                 }
 
             }
-
-// to here
-
-// old code
-
-//            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-//            XPath xpath = XPathFactory.newInstance().newXPath();
-//
-//            Document currentDoc;
-//            NodeList nodes;
-//            currentDoc = dbf.newDocumentBuilder().newDocument();
-//
-//            InputStream openaireInputStream = fetchMetadata(query);
-//            Document doc = dbf.newDocumentBuilder().parse(openaireInputStream);
-//            nodes = (NodeList) xpath.evaluate("//OMTDPublications/documentMetadataRecord", doc, XPathConstants.NODESET);
-//            if (nodes != null) {
-//                for (int i = 0; i < nodes.getLength(); i++) {
-//                    Node imported = currentDoc.importNode(nodes.item(i), true);
-//
-//                    // Find DownloadUrls from imported node
-//                    XPathExpression downloadUrlsListExpression = xpath.compile("document/publication/distributions/documentDistributionInfo/downloadURLs/downloadURL");
-//                    NodeList downloadUrls = (NodeList) downloadUrlsListExpression.evaluate(imported, XPathConstants.NODESET);
-//
-//                    for (int j = 0; j < downloadUrls.getLength(); j++) {
-//                        Node downloadUrl = downloadUrls.item(j);
-//                        if (downloadUrl != null) {
-//                            try {
-//                                URL url = new URL(downloadUrl.getTextContent());
-//                                URLConnection connection = url.openConnection();
-//                                connection.connect();
-//                                String contentType = connection.getContentType();
-//                                if (contentType.toLowerCase().contains("html")) continue;
-//                                inputStream = url.openStream();
-//                                break;
-//
-//                            } catch (IOException e) {
-//                                log.error("downloadFullText: Error while streaming document. Proceeding to next document if any!");
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-// to here
-
         } catch (MalformedURLException e) {
             log.error("downloadFullText: MalformedURLException ", e);
         } catch (IOException e) {
@@ -290,7 +245,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
 
         // Setting query rows up to 500 for improving speed between fetching and importing metadata
-        tmpQuery.setTo(1000);
+        tmpQuery.setTo(100);
 
         buildParams(tmpQuery);
         buildFacets(tmpQuery);
