@@ -205,7 +205,8 @@ public class OpenAireSolrClient implements AutoCloseable {
                     } else {
                         StringBuilder fieldQuery = new StringBuilder();
                         for (String val : vals) {
-                            fieldQuery.append(key).append(":").append("\"").append(val).append("\"").append(" OR ");
+                            fieldQuery.append(key).append(":").append(val).append(" OR ");
+//                            fieldQuery.append(key).append(":").append("\"").append(val).append("\"").append(" OR ");
                         }
                         fieldQuery = new StringBuilder(fieldQuery.toString().replaceAll(" OR $", ""));
                         solrQuery.addFilterQuery(fieldQuery.toString());

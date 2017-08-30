@@ -12,6 +12,8 @@ public class PublicationTypeConverter {
             case "Article":
             case "Software Paper":
                 return PublicationTypeEnum.RESEARCH_ARTICLE;
+            case "Thesis":
+                return PublicationTypeEnum.THESIS;
             case "Doctoral Thesis":
                 return PublicationTypeEnum.DOCTORAL_THESIS;
             case "Conference Object":
@@ -63,6 +65,11 @@ public class PublicationTypeConverter {
             case RESEARCH_ARTICLE:
                 publicationTypeList.add("Article");
                 publicationTypeList.add("Software Paper");
+                break;
+            case THESIS:
+                publicationTypeList.add("Doctoral Thesis");
+                publicationTypeList.add("Master Thesis");
+                publicationTypeList.add("Bachelor Thesis");
                 break;
             case DOCTORAL_THESIS:
                 publicationTypeList.add("Doctoral Thesis");

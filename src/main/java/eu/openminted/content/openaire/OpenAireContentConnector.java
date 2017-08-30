@@ -414,6 +414,18 @@ public class OpenAireContentConnector implements ContentConnector {
                 if (key.equalsIgnoreCase(OMTDFacetEnum.PUBLICATION_TYPE.value())) {
                     ArrayList<String> publicationTypeValues = new ArrayList<>();
                     for (String publicationType : query.getParams().get(key)) {
+
+                        try {
+                            PublicationTypeEnum.valueOf(publicationType);
+                        } catch (IllegalArgumentException e) {
+                            publicationTypeValues.add(publicationType);
+                            continue;
+                        }
+
+//                        if (publicationType.equalsIgnoreCase("research")) {
+//                            publicationTypeValues.add("Research");
+//                            continue;
+//                        }
                         PublicationTypeConverter.convert(publicationTypeValues, omtdFacetInitializer.getOmtdGetPublicationTypeEnumFromLabel().get(publicationType));
                     }
                     openAireParams.put(omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase()), new ArrayList<>(publicationTypeValues));
