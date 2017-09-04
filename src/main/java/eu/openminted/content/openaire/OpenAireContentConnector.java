@@ -245,7 +245,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
 
         // Setting query rows up to 500 for improving speed between fetching and importing metadata
-        tmpQuery.setTo(100);
+        tmpQuery.setTo(10);
 
         buildParams(tmpQuery);
         buildFacets(tmpQuery);
