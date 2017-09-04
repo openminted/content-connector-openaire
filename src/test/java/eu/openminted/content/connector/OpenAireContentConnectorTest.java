@@ -44,8 +44,12 @@ public class OpenAireContentConnectorTest {
     @org.springframework.beans.factory.annotation.Value("${services.openaire.getProfile}")
     private String getProfileUrl;
 
+
+    @org.springframework.beans.factory.annotation.Value("${content.limit}")
+    private String contentLimit;
+
     @Test
-    @Ignore
+//    @Ignore
     public void search() throws Exception {
         // The way this test is implemented it supposes all of the following parameters enabled.
         // To alter the query by a parameter or field or facet
@@ -65,7 +69,7 @@ public class OpenAireContentConnectorTest {
         query.getParams().get("publicationYear").add("2010");
 //        query.getParams().get("publicationYear").add("2011");
 //        query.getParams().get("publicationYear").add("2012");
-        query.setKeyword("*:*");
+        query.setKeyword("");
         query.setFacets(new ArrayList<>());
 //        query.getFacets().add("Licence");
 //        query.getFacets().add("resulttypename");
@@ -100,7 +104,7 @@ public class OpenAireContentConnectorTest {
     }
 
     @Test
-    @Ignore
+//    @Ignore
     public void fetchMetadata() throws Exception {
         // The way this test is implemented it supposes all of the following parameters enabled.
         // To alter the query by a parameter or field or facet
@@ -128,13 +132,14 @@ public class OpenAireContentConnectorTest {
         while (openAireContentConnector.getDefaultCollection() == null || openAireContentConnector.getDefaultCollection().isEmpty())
             Thread.sleep(1000);
 
-        InputStream inputStream = openAireContentConnector.fetchMetadata(query);
-        String line;
-        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-        while ((line = br.readLine()) != null) {
-            System.out.println(line);
-        }
-        br.close();
+        System.out.println(contentLimit);
+//        InputStream inputStream = openAireContentConnector.fetchMetadata(query);
+//        String line;
+//        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+//        while ((line = br.readLine()) != null) {
+//            System.out.println(line);
+//        }
+//        br.close();
     }
 
     @Test
