@@ -13,12 +13,6 @@ public class OpenAireConnectorTestConfiguration {
     public PropertyPlaceholderConfigurer propertyPlaceholderConfigurer() throws IOException {
         final PropertyPlaceholderConfigurer ppc = new PropertyPlaceholderConfigurer();
         ppc.setLocation(new ClassPathResource("application.properties"));
-//        ppc.setLocations((Resource[]) ArrayUtils.addAll(
-//                new PathMatchingResourcePatternResolver().getResources("classpath:application.properties"),
-//                new PathMatchingResourcePatternResolver().getResources("classpath:test.properties")
-//                )
-//        );
-
         return ppc;
     }
 
