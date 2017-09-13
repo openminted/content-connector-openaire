@@ -183,6 +183,9 @@ public class OpenAireContentConnector implements ContentConnector {
         try {
             Query query = new Query();
             query.setParams(new HashMap<>());
+            // use escape characters for special symbol of ':' in metadata identifier
+            s = s.replaceAll("\\:", "\\\\:");
+
             query.getParams().put("__indexrecordidentifier", new ArrayList<>());
             query.getParams().get("__indexrecordidentifier").add(s);
             query.setKeyword("*:*");

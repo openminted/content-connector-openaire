@@ -203,7 +203,8 @@ public class OpenAireContentConnectorTest {
 
         query.getParams().put("licence", new ArrayList<>());
         query.getParams().get("licence").add("Open Access");
-//        query.getParams().put("__indexrecordidentifier", new ArrayList<>());
+        query.getParams().put("__indexrecordidentifier", new ArrayList<>());
+        query.getParams().get("__indexrecordidentifier").add("od_______307::2ac66b99e43f23785fd1ae6011ead1f6");
 //        query.getParams().get("__indexrecordidentifier").add("jairo_______::c18df4def4d30069e9557d686023675e");
 
         query.getParams().put("sort", new ArrayList<>());
@@ -316,7 +317,8 @@ public class OpenAireContentConnectorTest {
     @Ignore
     public void downloadFullText() throws Exception {
         String line;
-        InputStream inputStream = openAireContentConnector.downloadFullText("core_ac_uk__::0114f25b46c4b6d69f6067e82c285d1a");
+        InputStream inputStream = openAireContentConnector.downloadFullText("od_______307::2ac66b99e43f23785fd1ae6011ead1f6");
+//        InputStream inputStream = openAireContentConnector.downloadFullText("core_ac_uk__::0114f25b46c4b6d69f6067e82c285d1a");
 //        InputStream inputStream = openAireContentConnector.downloadFullText("jairo_______::c18df4def4d30069e9557d686023675e");
 //        InputStream inputStream = openAireContentConnector.downloadFullText("od_______165::00000090f0a93f19f8fb17252976f1fb");
         if (inputStream != null) {
