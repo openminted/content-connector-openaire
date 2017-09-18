@@ -324,7 +324,6 @@ public class OpenAireContentConnector implements ContentConnector {
             facet.setLabel(omtdFacetInitializer.getOmtdFacetLabels().get(facetEnum));
             List<Value> values = new ArrayList<>();
             for (FacetField.Count count : facetField.getValues()) {
-                if (count.getCount() == 0) continue;
                 Value value = new Value();
 
                 if (field.equalsIgnoreCase(OMTDFacetEnum.RIGHTS.value())) {

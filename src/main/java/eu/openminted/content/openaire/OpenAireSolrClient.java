@@ -128,6 +128,7 @@ public class OpenAireSolrClient implements AutoCloseable {
     public SolrQuery queryBuilder(Query query) {
         String FILTER_QUERY_RESULT_TYPE_NAME = "resulttypename:publication";
         String FILTER_QUERY_DELETED_BY_INFERENCE = "deletedbyinference:false";
+        String FILTER_QUERY_OPEN_ACCESS_ONLY = "resultrights:Open Access";
 
         if (query.getFrom() > 0) {
             this.start = query.getFrom();
@@ -217,6 +218,7 @@ public class OpenAireSolrClient implements AutoCloseable {
 
         solrQuery.addFilterQuery(FILTER_QUERY_RESULT_TYPE_NAME);
         solrQuery.addFilterQuery(FILTER_QUERY_DELETED_BY_INFERENCE);
+        solrQuery.addFilterQuery(FILTER_QUERY_OPEN_ACCESS_ONLY);
 
         solrQuery.setQuery(query.getKeyword());
 
