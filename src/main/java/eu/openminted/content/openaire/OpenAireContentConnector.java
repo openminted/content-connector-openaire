@@ -408,8 +408,11 @@ public class OpenAireContentConnector implements ContentConnector {
 
         Map<String, List<String>> openAireParams = new HashMap<>();
         OMTDFacetInitializer omtdFacetInitializer = new OMTDFacetInitializer();
+
         if (query.getParams() != null && query.getParams().size() > 0) {
+
             for (String key : query.getParams().keySet()) {
+
                 if (key.equalsIgnoreCase(OMTDFacetEnum.SOURCE.value())) continue;
                 if (key.equalsIgnoreCase(OMTDFacetEnum.DOCUMENT_TYPE.value())) continue;
 
