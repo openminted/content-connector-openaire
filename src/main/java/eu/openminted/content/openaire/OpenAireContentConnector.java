@@ -465,7 +465,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
                     // populate openAireParams with language code Ids
                     for (String languageValue : query.getParams().get(key)) {
-                        languageTypeConverter.convertToOpenAIRE(openAireParams.get(languageKey), languageValue);
+                        languageTypeConverter.convertToOpenAIRE(openAireParams.get(languageKey), languageValue.toLowerCase());
                     }
                 } else {
                     if (omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().containsKey(key.toLowerCase())) {
