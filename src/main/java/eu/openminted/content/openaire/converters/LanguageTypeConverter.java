@@ -80,10 +80,10 @@ public class LanguageTypeConverter {
             code = languageUtils.getConvert639_3to639_1().get(code);
             language.setLanguageId(code);
             language.setLanguageTag(languageUtils.getLangCodeToName().get(code));
-        } else if (languageUtils.getObsoletes().containsKey(code)) {
+        } else if (languageUtils.getAdditionalCodes().containsKey(code)) {
             language = new Language();
 
-            code = languageUtils.getObsoletes().get(code);
+            code = languageUtils.getAdditionalCodes().get(code);
             language.setLanguageId(code);
             language.setLanguageTag(languageUtils.getLangCodeToName().get(code));
         }
@@ -114,25 +114,42 @@ public class LanguageTypeConverter {
         List<String> codes = new ArrayList<>();
 
         if (languageUtils.getConvert639_1to639_2B().containsKey(code)) {
-            codes.add(languageUtils.getConvert639_1to639_2B().get(code));
+            extractMultipleCodes(codes, languageUtils.getConvert639_1to639_2B().get(code));
         }
 
         if (languageUtils.getConvert639_1to639_2T().containsKey(code)) {
-            codes.add(languageUtils.getConvert639_1to639_2T().get(code));
+            extractMultipleCodes(codes, languageUtils.getConvert639_1to639_2T().get(code));
         }
 
         if (languageUtils.getConvert639_1to639_3().containsKey(code)) {
-            codes.add(languageUtils.getConvert639_1to639_3().get(code));
+            extractMultipleCodes(codes, languageUtils.getConvert639_1to639_3().get(code));
         }
 
-        if (languageUtils.getObsoletes().containsKey(code)) {
-            codes.add(languageUtils.getObsoletes().get(code));
+        if (languageUtils.getAdditionalCodes().containsKey(code)) {
+            extractMultipleCodes(codes, languageUtils.getAdditionalCodes().get(code));
         }
 
         if (languageUtils.getLangCodeToName().containsKey(code)) {
-            codes.add(code);
+            extractMultipleCodes(codes, code);
         }
 
         return codes;
+    }
+
+    /**
+     * Additional assisting method for splitting and merging codes that are separated with /
+     * @param codes List of codes to add
+     * @param multipleCodes code that may (or may not) contains separation symbol
+     */
+    private void extractMultipleCodes(List<String> codes, String multipleCodes) {
+        String[] multiples = multipleCodes.split("/");
+        codes.add(multipleCodes);
+
+        if (multiples.length > 1) {
+            codes.add(multiples[0]);
+            codes.add(multiples[1]);
+            codes.add(multiples[1] + "/" + multiples[0]);
+        }
+
     }
 }
