@@ -4,15 +4,20 @@ import eu.openminted.content.connector.ContentConnector;
 import eu.openminted.content.connector.Query;
 import eu.openminted.content.connector.SearchResult;
 import eu.openminted.content.connector.utils.faceting.OMTDFacetEnum;
-import eu.openminted.content.connector.utils.faceting.OMTDFacetInitializer;
+import eu.openminted.content.connector.utils.faceting.OMTDFacetLabels;
+import eu.openminted.content.openaire.converters.LanguageTypeConverter;
+import eu.openminted.content.openaire.converters.PublicationTypeConverter;
+import eu.openminted.content.openaire.converters.RightsStmtNameConverter;
 import eu.openminted.registry.core.domain.Facet;
 import eu.openminted.registry.core.domain.Value;
+import eu.openminted.registry.domain.Language;
 import eu.openminted.registry.domain.PublicationTypeEnum;
 import eu.openminted.registry.domain.RightsStatementEnum;
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
@@ -22,7 +27,10 @@ import javax.annotation.PostConstruct;
 import javax.net.ssl.*;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.*;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.io.*;
 import java.net.*;
 import java.security.KeyManagementException;
@@ -61,8 +69,19 @@ public class OpenAireContentConnector implements ContentConnector {
     @org.springframework.beans.factory.annotation.Value("${solr.update.default.collection}")
     private boolean updateCollection;
 
+    @Autowired
+    private PublicationTypeConverter publicationTypeConverter;
+
+    @Autowired
+    private OMTDFacetLabels omtdFacetInitializer;
+
+    @Autowired
+    private RightsStmtNameConverter rightsStmtNameConverter;
+
+    @Autowired
+    private LanguageTypeConverter languageTypeConverter;
+
     private OpenAIREFacetingInitializer omtdOpenAIREFacetingInitializer = new OpenAIREFacetingInitializer();
-    private OMTDFacetInitializer omtdFacetInitializer = new OMTDFacetInitializer();
 
     public OpenAireContentConnector() {
     }
@@ -194,7 +213,7 @@ public class OpenAireContentConnector implements ContentConnector {
                 QueryResponse response = openAireSolrClient.query(query);
                 if (response.getResults() != null) {
                     for (SolrDocument document : response.getResults()) {
-                        String downloadUrl = "";
+                        String downloadUrl;
 
                         try {
                             if (document.getFieldValue("fulltext") != null) {
@@ -327,7 +346,7 @@ public class OpenAireContentConnector implements ContentConnector {
                 Value value = new Value();
 
                 if (field.equalsIgnoreCase(OMTDFacetEnum.RIGHTS.value())) {
-                    RightsStatementEnum rightsStatementEnum = RightsStmtNameConverter.convert(count.getName());
+                    RightsStatementEnum rightsStatementEnum = rightsStmtNameConverter.convertToOMTD(count.getName());
 
                     if (rightsStatementEnum != null
                             && omtdFacetInitializer.getOmtdRightsStmtLabels().containsKey(rightsStatementEnum))
@@ -337,13 +356,20 @@ public class OpenAireContentConnector implements ContentConnector {
                         value.setValue(count.getName());
                     }
                 } else if (field.equalsIgnoreCase(OMTDFacetEnum.PUBLICATION_TYPE.value())) {
-                    PublicationTypeEnum publicationTypeEnum = PublicationTypeConverter.convert(count.getName());
+                    PublicationTypeEnum publicationTypeEnum = publicationTypeConverter.convertToOMTD(count.getName());
 
                     if (omtdFacetInitializer.getOmtdPublicationTypeLabels().containsKey(publicationTypeEnum))
                         value.setValue(omtdFacetInitializer.getOmtdPublicationTypeLabels()
                                 .get(publicationTypeEnum));
                     else {
                         value.setValue(count.getName());
+                    }
+                } else if (field.equalsIgnoreCase(OMTDFacetEnum.DOCUMENT_LANG.value())) {
+
+                    Language language = languageTypeConverter.convertCodeToLanguage(count.getName());
+
+                    if (language != null) {
+                        value.setValue(language.getLanguageTag());
                     }
                 } else {
                     value.setValue(count.getName());
@@ -407,7 +433,6 @@ public class OpenAireContentConnector implements ContentConnector {
     private void buildParams(Query query) {
 
         Map<String, List<String>> openAireParams = new HashMap<>();
-        OMTDFacetInitializer omtdFacetInitializer = new OMTDFacetInitializer();
 
         if (query.getParams() != null && query.getParams().size() > 0) {
 
@@ -417,37 +442,35 @@ public class OpenAireContentConnector implements ContentConnector {
                 if (key.equalsIgnoreCase(OMTDFacetEnum.DOCUMENT_TYPE.value())) continue;
 
                 if (key.equalsIgnoreCase(OMTDFacetEnum.PUBLICATION_TYPE.value())) {
-                    ArrayList<String> publicationTypeValues = new ArrayList<>();
+                    String publicationKey = omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase());
+                    openAireParams.put(publicationKey, new ArrayList<>());
+
+                    // populate openAireParams with publication types
                     for (String publicationType : query.getParams().get(key)) {
-
-                        try {
-                            PublicationTypeEnum.valueOf(publicationType);
-                        } catch (IllegalArgumentException e) {
-                            publicationTypeValues.add(publicationType);
-                            continue;
-                        }
-
-//                        if (publicationType.equalsIgnoreCase("research")) {
-//                            publicationTypeValues.add("Research");
-//                            continue;
-//                        }
-                        PublicationTypeConverter.convert(publicationTypeValues, omtdFacetInitializer.getOmtdGetPublicationTypeEnumFromLabel().get(publicationType));
+                        publicationTypeConverter.convertToOpenAIRE(openAireParams.get(publicationKey), publicationType);
                     }
-                    openAireParams.put(omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase()), new ArrayList<>(publicationTypeValues));
-                } else if (key.equalsIgnoreCase(OMTDFacetEnum.RIGHTS.value())) {
-                    ArrayList<String> rightsValues = new ArrayList<>();
+                }
+                else if (key.equalsIgnoreCase(OMTDFacetEnum.RIGHTS.value())) {
+                    String rightsKey = omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase());
+                    openAireParams.put(rightsKey, new ArrayList<>());
+
+                    // populate openAireParams with right statement types
                     for (String rightsValue : query.getParams().get(key)) {
-                        RightsStmtNameConverter.convert(rightsValues, omtdFacetInitializer.getOmtdGetRightsStmtEnumFromLabel().get(rightsValue));
+                        rightsStmtNameConverter.convertToOpenAIRE(openAireParams.get(rightsKey), rightsValue);
                     }
-                    openAireParams.put(omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase()), new ArrayList<>(rightsValues));
+                }
+                else if (key.equalsIgnoreCase(OMTDFacetEnum.DOCUMENT_LANG.value())) {
+                    String languageKey = omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase());
+                    openAireParams.put(languageKey, new ArrayList<>());
+
+                    // populate openAireParams with language code Ids
+                    for (String languageValue : query.getParams().get(key)) {
+                        languageTypeConverter.convertToOpenAIRE(openAireParams.get(languageKey), languageValue);
+                    }
                 } else {
                     if (omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().containsKey(key.toLowerCase())) {
                         openAireParams.put(omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase()), new ArrayList<>(query.getParams().get(key)));
                     }
-
-//                else {
-//                    openAireParams.put(key.toLowerCase(), new ArrayList<>(query.getParams().get(key)));
-//                }
                 }
             }
 

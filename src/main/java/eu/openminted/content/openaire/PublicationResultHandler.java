@@ -1,6 +1,8 @@
 package eu.openminted.content.openaire;
 
-import eu.openminted.content.connector.utils.language.LanguageConverter;
+import eu.openminted.content.openaire.converters.LanguageTypeConverter;
+import eu.openminted.content.openaire.converters.PublicationTypeConverter;
+import eu.openminted.content.openaire.converters.RightsStmtNameConverter;
 import eu.openminted.registry.domain.*;
 import org.apache.log4j.Logger;
 import org.xml.sax.Attributes;
@@ -23,6 +25,9 @@ import java.util.List;
 public class PublicationResultHandler extends DefaultHandler {
     private static Logger log = Logger.getLogger(PublicationResultHandler.class.getName());
 
+    private RightsStmtNameConverter rightsStmtNameConverter;
+    private PublicationTypeConverter publicationTypeConverter;
+    private LanguageTypeConverter languageTypeConverter;
     private DocumentMetadataRecord documentMetadataRecord;
     private DocumentInfo publication;
     private MetadataHeaderInfo metadataHeaderInfo;
@@ -55,6 +60,9 @@ public class PublicationResultHandler extends DefaultHandler {
         jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
         jaxbMarshaller.setProperty("jaxb.fragment", true);
 
+        rightsStmtNameConverter = new RightsStmtNameConverter();
+        publicationTypeConverter = new PublicationTypeConverter();
+        languageTypeConverter = new LanguageTypeConverter();
         documentMetadataRecord = new DocumentMetadataRecord();
         Document document = new Document();
         publication = new DocumentInfo();
@@ -122,11 +130,9 @@ public class PublicationResultHandler extends DefaultHandler {
          */
         else if (qName.equalsIgnoreCase("instancetype")) {
             String classname = attributes.getValue("classname");
-            PublicationTypeEnum publicationTypeEnum;
-            try {
-                publicationTypeEnum = PublicationTypeEnum.fromValue(classname);
-            } catch (IllegalArgumentException ex) {
-                publicationTypeEnum = PublicationTypeEnum.OTHER;
+            PublicationTypeEnum publicationTypeEnum = publicationTypeConverter.convertToOMTD(classname);
+
+            if (publicationTypeEnum == PublicationTypeEnum.OTHER) {
                 String schemeid = attributes.getValue("schemeid");
                 if (!schemeid.isEmpty())
                     publicationIdentifier.setSchemeURI("http://api.openaire.eu/vocabularies/" + schemeid + "/" + classname);
@@ -134,6 +140,7 @@ public class PublicationResultHandler extends DefaultHandler {
                     publicationIdentifier.setSchemeURI("http://api.openaire.eu/vocabularies/dnet:publication_resource/UNKNOWN");
                 }
             }
+
             publication.setPublicationType(publicationTypeEnum);
         }
         /*
@@ -189,32 +196,11 @@ public class PublicationResultHandler extends DefaultHandler {
         }
         /*
             DocumentLanguage
-            OpenAire is using different language coding from OMTD
          */
         else if (qName.equalsIgnoreCase("language")) {
             value = "";
             String classid = attributes.getValue("classid");
-            String classname = attributes.getValue("classname");
-
-
-            Language language = new Language();
-
-            // Check this hashMap to convert openaire ISO 639-2 to omtd ISO 639-1 (or ISO 639-3)
-            if (LanguageConverter.getInstance().getOpenaireToOMTDName().containsKey(classname)) {
-                classname = LanguageConverter.getInstance().getOpenaireToOMTDName().get(classname);
-            }
-
-            if (LanguageConverter.getInstance().getLangNameToCode().containsKey(classname)) {
-                classid = LanguageConverter.getInstance().getLangNameToCode().get(classname);
-            } else {
-                if (LanguageConverter.getInstance().getLangCodeToName().containsKey(classid)) {
-                    classname = LanguageConverter.getInstance().getLangCodeToName().get(classid);
-                }
-            }
-
-            language.setLanguageTag(classname);
-            language.setLanguageId(classid);
-
+            Language language = languageTypeConverter.convertCodeToLanguage(classid);
             publication.getDocumentLanguages().add(language);
         }
         /*
@@ -266,7 +252,7 @@ public class PublicationResultHandler extends DefaultHandler {
             licenceInfos.getLicenceInfo().add(licenceInfo);
 
             List<RightsStatementEnum> rightsStatementEnumList = new ArrayList<>();
-            rightsStatementEnumList.add(RightsStmtNameConverter.convert(classname));
+            rightsStatementEnumList.add(rightsStmtNameConverter.convertToOMTD(classname));
             rightsInfo.setRightsStatement(rightsStatementEnumList);
             rightsInfo.getLicenceInfos().add(licenceInfos);
         }

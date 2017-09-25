@@ -44,7 +44,6 @@ public class OpenAireContentConnectorTest {
     @org.springframework.beans.factory.annotation.Value("${services.openaire.getProfile}")
     private String getProfileUrl;
 
-
     @org.springframework.beans.factory.annotation.Value("${content.limit}")
     private String contentLimit;
 
