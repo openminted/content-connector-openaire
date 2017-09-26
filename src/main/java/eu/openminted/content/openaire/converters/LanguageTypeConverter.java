@@ -6,7 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class LanguageTypeConverter {
@@ -21,23 +23,24 @@ public class LanguageTypeConverter {
     /**
      * Converts a language code to a language name as specified in Utils LanguageConverter
      * This method is mainly used when we create OMTD objects from OpenAIRE codes
-     * @param classid the code to find the corresponding language name
+     *
+     * @param languageCode the code to find the corresponding language name
      * @return Language element with Id (code) and Tag (name)
      */
-    public Language convertCodeToLanguage(String classid) {
+    public Language convertCodeToLanguage(String languageCode) {
         Language language;
-        String classId = null;
+        String code = null;
 
-        String[] classIds = classid.split("/");
-        if (classIds.length > 0) classId = classIds[0].replaceAll("\\'", "");
+        String[] codings = languageCode.split("/");
+        if (codings.length > 0) code = codings[0].replaceAll("\\'", "");
 
-        language = getLanguageAndCode(classId);
+        language = getLanguageAndCode(code);
 
         if ((language == null
                 || language.getLanguageTag() == null)
-                && classIds.length > 1) {
-            classId = classIds[1].replaceAll("\\'", "");
-            language = getLanguageAndCode(classId);
+                && codings.length > 1) {
+            code = codings[1].replaceAll("\\'", "");
+            language = getLanguageAndCode(code);
         }
         // for testing purposes only uncomment the following lines
 //        if (language == null) System.out.println("The classId was " + classId + " from classid " + classid);
@@ -49,6 +52,7 @@ public class LanguageTypeConverter {
     /**
      * Assisting method for convertCodeToLanguage
      * It iterates through various ISO code lists to find corresponding codes and languages
+     *
      * @param code the code to find the corresponding language name
      * @return Language element with Id (code) and Tag (name)
      */
@@ -94,8 +98,9 @@ public class LanguageTypeConverter {
      * Method that converts an OMTD language name to the corresponding codes
      * from various ISO code lists in order to look for at OpenAIRE.
      * This method is used prior to an OpenAIRE query
+     *
      * @param languageNameList the OpenAire list for the query
-     * @param languageName the language name to look for
+     * @param languageName     the language name to look for
      */
     public void convertToOpenAIRE(List<String> languageNameList, String languageName) {
 
@@ -107,49 +112,54 @@ public class LanguageTypeConverter {
 
     /**
      * Assisting method for convertToOpenAIRE
+     *
      * @param code code to look for into other ISO coding lists
      * @return List of codes from other ISO coding lists and the code to look for
      */
     private List<String> getCodesFrom639_1Code(String code) {
         List<String> codes = new ArrayList<>();
 
+        String code639_2B = null;
+        String code639_2T = null;
+        String code639_3;
+        String additionalCode;
+
         if (languageUtils.getConvert639_1to639_2B().containsKey(code)) {
-            extractMultipleCodes(codes, languageUtils.getConvert639_1to639_2B().get(code));
+            code639_2B = languageUtils.getConvert639_1to639_2B().get(code);
+            if (!codes.contains(code639_2B))
+                codes.add(code639_2B);
         }
 
         if (languageUtils.getConvert639_1to639_2T().containsKey(code)) {
-            extractMultipleCodes(codes, languageUtils.getConvert639_1to639_2T().get(code));
+            code639_2T = languageUtils.getConvert639_1to639_2T().get(code);
+            if (!codes.contains(code639_2B))
+                codes.add(code639_2T);
         }
 
         if (languageUtils.getConvert639_1to639_3().containsKey(code)) {
-            extractMultipleCodes(codes, languageUtils.getConvert639_1to639_3().get(code));
+            code639_3 = languageUtils.getConvert639_1to639_3().get(code);
+            if (!codes.contains(code639_3))
+                codes.add(code639_3);
         }
 
         if (languageUtils.getAdditionalCodes().containsKey(code)) {
-            extractMultipleCodes(codes, languageUtils.getAdditionalCodes().get(code));
+            additionalCode = languageUtils.getAdditionalCodes().get(code);
+            if (!codes.contains(additionalCode))
+                codes.add(additionalCode);
         }
 
         if (languageUtils.getLangCodeToName().containsKey(code)) {
-            extractMultipleCodes(codes, code);
+            if (!codes.contains(code))
+                codes.add(code);
+        }
+
+        if (code639_2B != null
+                && code639_2T != null
+                && !code639_2B.equalsIgnoreCase(code639_2T)) {
+            codes.add(code639_2B + "/" + code639_2T);
+            codes.add(code639_2T + "/" + code639_2B);
         }
 
         return codes;
-    }
-
-    /**
-     * Additional assisting method for splitting and merging codes that are separated with /
-     * @param codes List of codes to add
-     * @param multipleCodes code that may (or may not) contains separation symbol
-     */
-    private void extractMultipleCodes(List<String> codes, String multipleCodes) {
-        String[] multiples = multipleCodes.split("/");
-        codes.add(multipleCodes);
-
-        if (multiples.length > 1) {
-            codes.add(multiples[0]);
-            codes.add(multiples[1]);
-            codes.add(multiples[1] + "/" + multiples[0]);
-        }
-
     }
 }
