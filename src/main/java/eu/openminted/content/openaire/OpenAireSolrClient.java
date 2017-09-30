@@ -84,6 +84,9 @@ public class OpenAireSolrClient implements AutoCloseable {
         boolean done = false;
         int count = 0;
 
+        // In order to cursor functionality to work start should be 0
+        if (solrQuery.getStart() != 0) solrQuery.setStart(0);
+
         try (SolrClient solrClient = getSolrClient()) {
             while (!done) {
                 solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
