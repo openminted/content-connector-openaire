@@ -107,6 +107,9 @@ public class LanguageTypeConverter {
         if (languageUtils.getLangNameToCode().containsKey(languageName)) {
             List<String> codes = getCodesFrom639_1Code(languageUtils.getLangNameToCode().get(languageName));
             languageNameList.addAll(codes);
+        } else if (languageUtils.getLangCodeToName().containsKey(languageName)) {
+            List<String> codes = getCodesFrom639_1Code(languageName);
+            languageNameList.addAll(codes);
         }
     }
 
