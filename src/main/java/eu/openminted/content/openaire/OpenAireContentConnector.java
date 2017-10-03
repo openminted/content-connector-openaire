@@ -349,20 +349,22 @@ public class OpenAireContentConnector implements ContentConnector {
                     RightsStatementEnum rightsStatementEnum = rightsStmtNameConverter.convertToOMTD(count.getName());
 
                     if (rightsStatementEnum != null
-                            && omtdFacetInitializer.getOmtdRightsStmtLabels().containsKey(rightsStatementEnum))
-                        value.setValue(omtdFacetInitializer.getOmtdRightsStmtLabels()
-                                .get(rightsStatementEnum));
-                    else {
+                            && omtdFacetInitializer.getOmtdRightsStmtLabels().containsKey(rightsStatementEnum)) {
+                        value.setValue(omtdFacetInitializer.getOmtdRightsStmtLabels().get(rightsStatementEnum));
+                        value.setLabel(omtdFacetInitializer.getOmtdRightsStmtLabels().get(rightsStatementEnum));
+                    } else {
                         value.setValue(count.getName());
+                        value.setLabel(count.getName());
                     }
                 } else if (field.equalsIgnoreCase(OMTDFacetEnum.PUBLICATION_TYPE.value())) {
                     PublicationTypeEnum publicationTypeEnum = publicationTypeConverter.convertToOMTD(count.getName());
 
-                    if (omtdFacetInitializer.getOmtdPublicationTypeLabels().containsKey(publicationTypeEnum))
-                        value.setValue(omtdFacetInitializer.getOmtdPublicationTypeLabels()
-                                .get(publicationTypeEnum));
-                    else {
+                    if (omtdFacetInitializer.getOmtdPublicationTypeLabels().containsKey(publicationTypeEnum)) {
+                        value.setValue(omtdFacetInitializer.getOmtdPublicationTypeLabels().get(publicationTypeEnum));
+                        value.setLabel(omtdFacetInitializer.getOmtdPublicationTypeLabels().get(publicationTypeEnum));
+                    } else {
                         value.setValue(count.getName());
+                        value.setLabel(count.getName());
                     }
                 } else if (field.equalsIgnoreCase(OMTDFacetEnum.DOCUMENT_LANG.value())) {
 
@@ -374,6 +376,7 @@ public class OpenAireContentConnector implements ContentConnector {
                     }
                 } else {
                     value.setValue(count.getName());
+                    value.setLabel(count.getName());
                 }
                 value.setCount((int) count.getCount());
                 values.add(value);
@@ -399,6 +402,7 @@ public class OpenAireContentConnector implements ContentConnector {
         List<Value> values = new ArrayList<>();
         Value value = new Value();
         value.setValue(countName);
+        value.setLabel(countName);
         value.setCount(countValue);
         values.add(value);
 
@@ -450,8 +454,7 @@ public class OpenAireContentConnector implements ContentConnector {
                     for (String publicationType : query.getParams().get(key)) {
                         publicationTypeConverter.convertToOpenAIRE(openAireParams.get(publicationKey), publicationType);
                     }
-                }
-                else if (key.equalsIgnoreCase(OMTDFacetEnum.RIGHTS.value())) {
+                } else if (key.equalsIgnoreCase(OMTDFacetEnum.RIGHTS.value())) {
                     String rightsKey = omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase());
                     openAireParams.put(rightsKey, new ArrayList<>());
 
@@ -459,8 +462,7 @@ public class OpenAireContentConnector implements ContentConnector {
                     for (String rightsValue : query.getParams().get(key)) {
                         rightsStmtNameConverter.convertToOpenAIRE(openAireParams.get(rightsKey), rightsValue);
                     }
-                }
-                else if (key.equalsIgnoreCase(OMTDFacetEnum.DOCUMENT_LANG.value())) {
+                } else if (key.equalsIgnoreCase(OMTDFacetEnum.DOCUMENT_LANG.value())) {
                     String languageKey = omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase());
                     openAireParams.put(languageKey, new ArrayList<>());
 
