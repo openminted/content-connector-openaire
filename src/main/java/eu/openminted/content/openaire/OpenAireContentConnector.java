@@ -371,9 +371,12 @@ public class OpenAireContentConnector implements ContentConnector {
                     Language language = languageTypeConverter.convertCodeToLanguage(count.getName());
 
                     if (language != null) {
-                        value.setLabel(language.getLanguageTag());
                         value.setValue(language.getLanguageId());
+                        value.setLabel(language.getLanguageTag());
                     }
+                } else if (field.equalsIgnoreCase(OMTDFacetEnum.PUBLICATION_YEAR.value())) {
+                    value.setValue(count.getName().substring(0, 4));
+                    value.setLabel(count.getName().substring(0, 4));
                 } else {
                     value.setValue(count.getName());
                     value.setLabel(count.getName());
