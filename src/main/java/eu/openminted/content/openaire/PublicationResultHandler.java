@@ -609,7 +609,34 @@ public class PublicationResultHandler extends DefaultHandler {
                 }
             } else if (qName.equalsIgnoreCase("mimetype")) {
                 if (hasIndexInfo) {
-                    dataFormatInfo.setMimeType(MimeTypeEnum.fromValue(value));
+                    MimeTypeEnum mimeType;
+                    try {
+                        mimeType = MimeTypeEnum.fromValue(value);
+                    } catch (IllegalArgumentException e) {
+                        mimeType = null;
+                    }
+
+                    if (dataFormatInfo.getMimeType() == null && mimeType != null)
+                        dataFormatInfo.setMimeType(mimeType);
+                }
+            } else if (qName.equalsIgnoreCase("format")) {
+                if (hasIndexInfo) {
+                    MimeTypeEnum mimeType;
+                    try {
+                        mimeType = MimeTypeEnum.fromValue(value);
+
+                    } catch (IllegalArgumentException e) {
+                        mimeType = null;
+                    }
+
+                    if (dataFormatInfo.getMimeType() != null) {
+                        if (mimeType != null && mimeType != dataFormatInfo.getMimeType()) {
+                            dataFormatInfo.setMimeType(mimeType);
+                        }
+                    } else {
+                        if (mimeType != null)
+                            dataFormatInfo.setMimeType(mimeType);
+                    }
                 }
             }
         } catch (Exception e) {
