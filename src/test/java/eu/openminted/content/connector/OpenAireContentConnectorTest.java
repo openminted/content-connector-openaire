@@ -112,21 +112,26 @@ public class OpenAireContentConnectorTest {
         Query query = new Query();
         query.setParams(new HashMap<>());
 
-        query.getParams().put("licence", new ArrayList<>());
-        query.getParams().get("licence").add("Open Access");
+//        query.getParams().put("licence", new ArrayList<>());
+//        query.getParams().get("licence").add("Open Access");
 
         query.getParams().put("sort", new ArrayList<>());
         query.getParams().get("sort").add("__indexrecordidentifier asc");
+
+        query.getParams().put("documentlanguage", new ArrayList<>());
+        query.getParams().get("documentlanguage").add("grc");
 
 //        query.getParams().put("__indexrecordidentifier", new ArrayList<>());
 //        query.getParams().get("__indexrecordidentifier").add("od________18::7ff13d895bc479a9143760e3ed68b6ed");
 
 
         query.setKeyword("*:*");
-        query.setFacets(new ArrayList<>());
-        query.getFacets().add("Licence");
-        query.getFacets().add("DocumentLanguage");
-        query.getFacets().add("PublicationType");
+        query.setFrom(0);
+        query.setTo(10);
+//        query.setFacets(new ArrayList<>());
+//        query.getFacets().add("Licence");
+//        query.getFacets().add("DocumentLanguage");
+//        query.getFacets().add("PublicationType");
 
         while (openAireContentConnector.getDefaultCollection() == null || openAireContentConnector.getDefaultCollection().isEmpty())
             Thread.sleep(1000);
