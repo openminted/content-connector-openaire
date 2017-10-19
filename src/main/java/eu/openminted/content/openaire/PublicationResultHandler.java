@@ -86,7 +86,7 @@ public class PublicationResultHandler extends DefaultHandler {
             /*
                 Set by default the document type to abstract until we find a solution to this
              */
-            documentMetadataRecord.getDocument().getPublication().setDocumentType(DocumentTypeEnum.WITH_FULL_TEXT);
+            documentMetadataRecord.getDocument().getPublication().setDocumentType(DocumentTypeEnum.WITH_ABSTRACT_ONLY);
         }
         /*
             Title
@@ -295,6 +295,7 @@ public class PublicationResultHandler extends DefaultHandler {
             indexinfo
          */
         else if (qName.equalsIgnoreCase("indexinfo")) {
+            documentMetadataRecord.getDocument().getPublication().setDocumentType(DocumentTypeEnum.WITH_FULL_TEXT);
             dataFormatInfo = new DataFormatInfo();
             value = "";
             hasIndexInfo = true;

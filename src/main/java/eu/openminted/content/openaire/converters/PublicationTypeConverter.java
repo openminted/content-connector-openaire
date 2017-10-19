@@ -11,7 +11,7 @@ import java.util.List;
 public class PublicationTypeConverter {
 
     @Autowired
-    private OMTDFacetLabels omtdFacetInitializer;
+    private OMTDFacetLabels omtdFacetLabels;
 
     public PublicationTypeEnum convertToOMTD(String bestLicence) {
 
@@ -75,7 +75,7 @@ public class PublicationTypeConverter {
 
         } catch (IllegalArgumentException e) {
             try {
-                publicationType = omtdFacetInitializer.getOmtdGetPublicationTypeEnumFromLabel().get(publication);
+                publicationType = omtdFacetLabels.getPublicationTypeEnumFromLabel().get(publication);
             } catch (Exception e1) {
                 publicationTypeList.add(publication);
                 publicationType = null;

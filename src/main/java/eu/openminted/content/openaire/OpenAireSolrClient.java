@@ -205,7 +205,8 @@ public class OpenAireSolrClient implements AutoCloseable {
                             }
                         }
                         datetimeFieldQuery = new StringBuilder(datetimeFieldQuery.toString().replaceAll(" OR $", ""));
-                        solrQuery.addFilterQuery(datetimeFieldQuery.toString());
+                        if (!datetimeFieldQuery.toString().isEmpty())
+                            solrQuery.addFilterQuery(datetimeFieldQuery.toString());
                     } else {
                         StringBuilder fieldQuery = new StringBuilder();
                         for (String val : vals) {
@@ -213,7 +214,8 @@ public class OpenAireSolrClient implements AutoCloseable {
 //                            fieldQuery.append(key).append(":").append("\"").append(val).append("\"").append(" OR ");
                         }
                         fieldQuery = new StringBuilder(fieldQuery.toString().replaceAll(" OR $", ""));
-                        solrQuery.addFilterQuery(fieldQuery.toString());
+                        if (!fieldQuery.toString().isEmpty())
+                            solrQuery.addFilterQuery(fieldQuery.toString());
                     }
                 }
             }

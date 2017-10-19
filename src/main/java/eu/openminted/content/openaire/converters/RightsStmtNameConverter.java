@@ -38,7 +38,7 @@ public class RightsStmtNameConverter {
 
         } catch (IllegalArgumentException e) {
             try {
-                rightsStatementEnum = omtdFacetInitializer.getOmtdGetRightsStmtEnumFromLabel().get(rights);
+                rightsStatementEnum = omtdFacetInitializer.getRightsStmtEnumFromLabel().get(rights);
             } catch (Exception e1) {
                 rightsValues.add(rights);
                 rightsStatementEnum = null;
