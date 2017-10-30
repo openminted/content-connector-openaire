@@ -12,6 +12,12 @@ public class DocumentTypeConverter {
     @Autowired
     private OMTDFacetLabels omtdFacetLabels;
 
+    /**
+     * Method to convert openaire property to omtd property
+     *
+     * @param documentType the value of the property
+     * @return the corresponding enum
+     */
     public DocumentTypeEnum convertToOMTD(String documentType) {
 
         switch (documentType.toLowerCase()) {
@@ -22,6 +28,11 @@ public class DocumentTypeConverter {
         }
     }
 
+    /**
+     * Method to convert an omtd to openaire property and add it into a list of properties
+     * @param documentTypeList list of properties to filter openaire
+     * @param documentType value to convert
+     */
     public void convertToOpenAIRE(List<String> documentTypeList, String documentType) {
 
         if (documentType.equalsIgnoreCase(omtdFacetLabels.

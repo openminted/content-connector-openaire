@@ -86,7 +86,8 @@ public class OpenAireContentConnector implements ContentConnector {
     @Autowired
     private DocumentTypeConverter documentTypeConverter;
 
-    private OpenAIREFacetingInitializer omtdOpenAIREFacetingInitializer = new OpenAIREFacetingInitializer();
+    @Autowired
+    private OpenAIREFacetingMapper openAIREFacetingMapper;
 
     public OpenAireContentConnector() {
     }
@@ -272,7 +273,8 @@ public class OpenAireContentConnector implements ContentConnector {
         }
 
 
-        // Setting query rows up to 500 for improving speed between fetching and importing metadata
+        // Setting query rows up to 10 for improving speed between fetching and importing metadata
+        // and not waiting log for metadata to load in memory prior their transport to the omtd service
         tmpQuery.setTo(10);
 
         buildParams(tmpQuery);
@@ -341,9 +343,9 @@ public class OpenAireContentConnector implements ContentConnector {
 
         Facet facet = null;
         String facetFieldName = facetField.getName().toLowerCase();
-        if (omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().containsKey(facetFieldName)) {
+        if (openAIREFacetingMapper.getOmtdOpenAIREMap().containsKey(facetFieldName)) {
             facet = new Facet();
-            String field = omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(facetFieldName);
+            String field = openAIREFacetingMapper.getOmtdOpenAIREMap().get(facetFieldName);
             facet.setField(field);
             OMTDFacetEnum facetEnum = OMTDFacetEnum.fromValue(field);
             facet.setLabel(omtdFacetLabels.getFacetLabelsFromEnum(facetEnum));
@@ -414,30 +416,6 @@ public class OpenAireContentConnector implements ContentConnector {
     }
 
     /**
-     * Creates an individual OMTD Facet
-     *
-     * @param field      facet's name
-     * @param countName  count's name
-     * @param countValue count's value
-     * @return OMTD Facet
-     */
-    private Facet buildFacet(String field, String label, String countName, int countValue) {
-        Facet facet = new Facet();
-        facet.setLabel(label);
-        facet.setField(field);
-
-        List<Value> values = new ArrayList<>();
-        Value value = new Value();
-        value.setValue(countName);
-        value.setLabel(countName);
-        value.setCount(countValue);
-        values.add(value);
-
-        facet.setValues(values);
-        return facet;
-    }
-
-    /**
      * Converts OMTD facets to OpenAIRE facets suitable for
      *
      * @param query the query as inserted in Content-OpenAireContentConnector-Service
@@ -448,12 +426,12 @@ public class OpenAireContentConnector implements ContentConnector {
         if (query.getFacets() != null && query.getFacets().size() > 0) {
             for (String facet : query.getFacets()) {
                 if (facet != null && !facet.isEmpty()) {
-                    if (omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().containsKey(facet.toLowerCase())) {
-                        facetsToAdd.add(omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(facet.toLowerCase()));
+                    if (openAIREFacetingMapper.getOmtdOpenAIREMap().containsKey(facet.toLowerCase())) {
+                        facetsToAdd.add(openAIREFacetingMapper.getOmtdOpenAIREMap().get(facet.toLowerCase()));
                     }
                 }
             }
-            facetsToAdd.add(omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(OMTDFacetEnum.DOCUMENT_TYPE.value()));
+            facetsToAdd.add(openAIREFacetingMapper.getOmtdOpenAIREMap().get(OMTDFacetEnum.DOCUMENT_TYPE.value()));
             query.setFacets(facetsToAdd);
         }
     }
@@ -473,7 +451,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
                 if (key.equalsIgnoreCase(OMTDFacetEnum.SOURCE.value())) continue;
                 if (key.equalsIgnoreCase(OMTDFacetEnum.DOCUMENT_TYPE.value())) {
-                    String documentTypeKey = omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase());
+                    String documentTypeKey = openAIREFacetingMapper.getOmtdOpenAIREMap().get(key.toLowerCase());
                     openAireParams.put(documentTypeKey, new ArrayList<>());
                     String abstractDocumentType = omtdFacetLabels.
                             getDocumentTypeLabelFromEnum(DocumentTypeEnum.WITH_ABSTRACT_ONLY);
@@ -491,7 +469,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
 
                 } else if (key.equalsIgnoreCase(OMTDFacetEnum.PUBLICATION_TYPE.value())) {
-                    String publicationKey = omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase());
+                    String publicationKey = openAIREFacetingMapper.getOmtdOpenAIREMap().get(key.toLowerCase());
                     openAireParams.put(publicationKey, new ArrayList<>());
 
                     // populate openAireParams with publication types
@@ -499,7 +477,7 @@ public class OpenAireContentConnector implements ContentConnector {
                         publicationTypeConverter.convertToOpenAIRE(openAireParams.get(publicationKey), publicationType);
                     }
                 } else if (key.equalsIgnoreCase(OMTDFacetEnum.RIGHTS.value())) {
-                    String rightsKey = omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase());
+                    String rightsKey = openAIREFacetingMapper.getOmtdOpenAIREMap().get(key.toLowerCase());
                     openAireParams.put(rightsKey, new ArrayList<>());
 
                     // populate openAireParams with right statement types
@@ -507,7 +485,7 @@ public class OpenAireContentConnector implements ContentConnector {
                         rightsStmtNameConverter.convertToOpenAIRE(openAireParams.get(rightsKey), rightsValue);
                     }
                 } else if (key.equalsIgnoreCase(OMTDFacetEnum.DOCUMENT_LANG.value())) {
-                    String languageKey = omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase());
+                    String languageKey = openAIREFacetingMapper.getOmtdOpenAIREMap().get(key.toLowerCase());
                     openAireParams.put(languageKey, new ArrayList<>());
 
                     // populate openAireParams with language code Ids
@@ -515,8 +493,8 @@ public class OpenAireContentConnector implements ContentConnector {
                         languageTypeConverter.convertToOpenAIRE(openAireParams.get(languageKey), languageValue.toLowerCase());
                     }
                 } else {
-                    if (omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().containsKey(key.toLowerCase())) {
-                        openAireParams.put(omtdOpenAIREFacetingInitializer.getOmtdOpenAIREMap().get(key.toLowerCase()), new ArrayList<>(query.getParams().get(key)));
+                    if (openAIREFacetingMapper.getOmtdOpenAIREMap().containsKey(key.toLowerCase())) {
+                        openAireParams.put(openAIREFacetingMapper.getOmtdOpenAIREMap().get(key.toLowerCase()), new ArrayList<>(query.getParams().get(key)));
                     }
                 }
             }

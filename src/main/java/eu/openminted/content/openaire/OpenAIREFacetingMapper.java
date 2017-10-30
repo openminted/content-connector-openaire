@@ -1,11 +1,13 @@
 package eu.openminted.content.openaire;
 
 import eu.openminted.content.connector.utils.faceting.OMTDFacetEnum;
+import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class OpenAIREFacetingInitializer {
+@Component
+public class OpenAIREFacetingMapper {
     private Map<String, String> OmtdOpenAIREMap = new HashMap<>();
     private String INSTANCE_TYPE_NAME = "instancetypename";
     private String RESULT_DATE_OF_ACCEPTENCE = "resultdateofacceptance";
@@ -13,7 +15,7 @@ public class OpenAIREFacetingInitializer {
     private String RESULT_LANG_ID = "resultlanguageid";
     private String MIMETYPE = "mimetype";
 
-    public OpenAIREFacetingInitializer() {
+    public OpenAIREFacetingMapper() {
         OmtdOpenAIREMap.put(OMTDFacetEnum.PUBLICATION_TYPE.value(), INSTANCE_TYPE_NAME);
         OmtdOpenAIREMap.put(OMTDFacetEnum.PUBLICATION_YEAR.value(), RESULT_DATE_OF_ACCEPTENCE);
         OmtdOpenAIREMap.put(OMTDFacetEnum.RIGHTS_STMT_NAME.value(), RESULT_RIGHTS);
