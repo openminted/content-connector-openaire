@@ -19,12 +19,23 @@ class Parser {
         handler = new PublicationResultHandler();
     }
 
+    /**
+     * The main method for parsing the input source and converting it to OMTD documentMetadataRecord xml string
+     * @param inputSource the input source, as OpenAIRE publication xml stream
+     * @throws IOException
+     * @throws SAXException
+     * @throws ParserConfigurationException
+     */
     void parse(InputSource inputSource) throws IOException, SAXException, ParserConfigurationException {
         SAXParserFactory factory = SAXParserFactory.newInstance();
         SAXParser saxParser = factory.newSAXParser();
         saxParser.parse(inputSource, handler);
     }
 
+    /**
+     * Gets the parsed OpenAIRE publication as xml string of OMTD documentMetadataRecord
+     * @return String xml of the parsed publication
+     */
     String getOMTDPublication() {
         return handler.getOMTDPublication();
     }

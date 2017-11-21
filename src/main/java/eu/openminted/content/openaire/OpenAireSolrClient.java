@@ -145,6 +145,7 @@ public class OpenAireSolrClient implements AutoCloseable {
 
         if (query.getFacets() != null) {
             solrQuery.setFacet(true);
+            solrQuery.setFacetLimit(-1);
 
             if (query.getFacets().size() > 0) {
                 solrQuery.addFacetField(query.getFacets().toArray(new String[query.getFacets().size()]));
@@ -211,7 +212,6 @@ public class OpenAireSolrClient implements AutoCloseable {
                         StringBuilder fieldQuery = new StringBuilder();
                         for (String val : vals) {
                             fieldQuery.append(key).append(":").append(val).append(" OR ");
-//                            fieldQuery.append(key).append(":").append("\"").append(val).append("\"").append(" OR ");
                         }
                         fieldQuery = new StringBuilder(fieldQuery.toString().replaceAll(" OR $", ""));
                         if (!fieldQuery.toString().isEmpty())

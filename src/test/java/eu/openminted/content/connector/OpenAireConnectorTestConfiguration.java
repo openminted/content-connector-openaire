@@ -4,10 +4,12 @@ import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.io.IOException;
 
 @Configuration
+@EnableScheduling
 public class OpenAireConnectorTestConfiguration {
     @Bean
     public PropertyPlaceholderConfigurer propertyPlaceholderConfigurer() throws IOException {

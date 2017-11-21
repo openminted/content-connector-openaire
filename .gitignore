@@ -27,7 +27,7 @@ Temporary Items
 .apdisk
 ### JetBrains template
 # directories
-.idea
+.idea/
 target/
 /out/
 *.iml

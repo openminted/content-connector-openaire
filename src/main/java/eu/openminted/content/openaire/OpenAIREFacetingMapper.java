@@ -6,6 +6,9 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Provides a map between OpenAIRE and OMTD properties
+ */
 @Component
 public class OpenAIREFacetingMapper {
     private Map<String, String> OmtdOpenAIREMap = new HashMap<>();
@@ -34,6 +37,10 @@ public class OpenAIREFacetingMapper {
 
     }
 
+    /**
+     * Get the OMTD to OpenAIRE map
+     * @return OmtdOpenAIREMap
+     */
     public Map<String, String> getOmtdOpenAIREMap() {
         return this.OmtdOpenAIREMap;
     }

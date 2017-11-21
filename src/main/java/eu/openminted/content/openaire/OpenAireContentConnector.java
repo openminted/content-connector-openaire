@@ -3,6 +3,7 @@ package eu.openminted.content.openaire;
 import eu.openminted.content.connector.ContentConnector;
 import eu.openminted.content.connector.Query;
 import eu.openminted.content.connector.SearchResult;
+import eu.openminted.content.connector.utils.SearchExtensions;
 import eu.openminted.content.connector.utils.faceting.OMTDFacetEnum;
 import eu.openminted.content.connector.utils.faceting.OMTDFacetLabels;
 import eu.openminted.content.openaire.converters.DocumentTypeConverter;
@@ -20,12 +21,12 @@ import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import javax.annotation.PostConstruct;
 import javax.net.ssl.*;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -39,7 +40,10 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Implements the ContentConnector interface for the OpenAire
@@ -68,7 +72,7 @@ public class OpenAireContentConnector implements ContentConnector {
     @org.springframework.beans.factory.annotation.Value("${solr.default.collection}")
     private String defaultCollection;
 
-    @org.springframework.beans.factory.annotation.Value("${solr.update.default.collection}")
+    @org.springframework.beans.factory.annotation.Value("${solr.update.default.collection:false}")
     private boolean updateCollection;
 
     @Autowired
@@ -93,31 +97,9 @@ public class OpenAireContentConnector implements ContentConnector {
     }
 
     /**
-     * Spring initialization method.
-     * Start timer to update defaultConnection. Time period is set to 10 minutes.
-     */
-    @PostConstruct
-    public void init() {
-        // awaiting period is 10 minutes
-        final long period = (long) 10 * 60 * 1000;
-
-        if (updateCollection) {
-            TimerTask timerTask = new TimerTask() {
-                @Override
-                public void run() {
-                    updateDefaultConnection();
-                }
-            };
-
-            Timer timer = new Timer(true);
-            timer.schedule(timerTask, 0, period);
-        }
-    }
-
-    /**
      * Search method for browsing metadata
      *
-     * @param query the query as inserted in Content-OpenAireContentConnector-Service
+     * @param query the query as inserted in content connector service
      * @return SearchResult with metadata and facets
      */
     @Override
@@ -170,8 +152,17 @@ public class OpenAireContentConnector implements ContentConnector {
                 for (FacetField facetField : response.getFacetFields()) {
                     Facet facet = buildFacet(facetField);
                     if (facet != null && facet.getValues() != null && facet.getValues().size() > 0) {
+
+                        // merge values that contain the same value.value
+                        facet.setValues(SearchExtensions.mergeValues(facet));
+
                         if (!facets.containsKey(facet.getField())) {
                             facets.put(facet.getField(), facet);
+                        } else {
+                            // in case another facet with the same facet.field exists,
+                            // merge the two facets and add the product to the map
+                            // instead of the initial facet
+                            facets.put(facet.getField(), SearchExtensions.mergeFacet(facets.get(facet.getField()), facet));
                         }
                     }
                 }
@@ -198,10 +189,10 @@ public class OpenAireContentConnector implements ContentConnector {
     }
 
     /**
-     * Method for downloading fullText linked pdf
+     * Method for downloading fullText linked documents (pdf, xml etc)
      *
      * @param s the ID of the metadata
-     * @return the pdf in the form of InputStream
+     * @return the document in the form of InputStream
      */
     @Override
     public InputStream downloadFullText(String s) {
@@ -260,7 +251,7 @@ public class OpenAireContentConnector implements ContentConnector {
     /**
      * Method for downloading metadata where the query's criteria are applicable
      *
-     * @param query the query as inserted in Content-OpenAireContentConnector-Service
+     * @param query the query as inserted in content connector service
      * @return The metadata in the form of InputStream
      */
     @Override
@@ -271,7 +262,6 @@ public class OpenAireContentConnector implements ContentConnector {
         if (tmpQuery.getKeyword() == null || tmpQuery.getKeyword().isEmpty()) {
             tmpQuery.setKeyword("*:*");
         }
-
 
         // Setting query rows up to 10 for improving speed between fetching and importing metadata
         // and not waiting log for metadata to load in memory prior their transport to the omtd service
@@ -291,7 +281,7 @@ public class OpenAireContentConnector implements ContentConnector {
                 try (OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection, contentLimit)) {
                     openAireSolrClient.fetchMetadata(openaireQuery, new OpenAireStreamingResponseCallback(outputStream, queryOutputField));
                     outputStream.flush();
-                    outputStream.write("</OMTDPublications>\n".getBytes());
+                    outputStream.write("</documentMetadataRecords>\n".getBytes());
                 } catch (Exception e) {
                     log.info("Fetching metadata has been interrupted. See debug for details!");
                     log.debug("OpenAireSolrClient.fetchMetadata", e);
@@ -306,7 +296,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
             outputStream.connect(inputStream);
             outputStream.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".getBytes());
-            outputStream.write("<OMTDPublications>\n".getBytes());
+            outputStream.write("<documentMetadataRecords>\n".getBytes());
         } catch (IOException e) {
             log.info("Fetching metadata has been interrupted. See debug for details!");
             log.debug("OpenAireContentConnector.fetchMetadata", e);
@@ -431,7 +421,8 @@ public class OpenAireContentConnector implements ContentConnector {
                     }
                 }
             }
-            facetsToAdd.add(openAIREFacetingMapper.getOmtdOpenAIREMap().get(OMTDFacetEnum.DOCUMENT_TYPE.value()));
+            // TODO: 13/11/2017 remove the following line if tests with OpenMinTeD service are OK
+//            facetsToAdd.add(openAIREFacetingMapper.getOmtdOpenAIREMap().get(OMTDFacetEnum.DOCUMENT_TYPE.value()));
             query.setFacets(facetsToAdd);
         }
     }
@@ -545,73 +536,77 @@ public class OpenAireContentConnector implements ContentConnector {
     /**
      * Updates defaultConnection by querying services.openaire.eu profile
      */
-    protected void updateDefaultConnection() {
-        InputStream inputStream;
-        URLConnection con;
-        try {
-            URL url = new URL(getProfileUrl);
-            Authenticator.setDefault(new Authenticator() {
+    @Scheduled(fixedRate = (long)10 * 60 * 1000, initialDelay = 0)
+    private void updateDefaultConnection() {
 
-                @Override
-                protected PasswordAuthentication getPasswordAuthentication() {
-                    return new PasswordAuthentication("admin", "driver".toCharArray());
-                }
-            });
-
+        if (updateCollection) {
+            InputStream inputStream;
+            URLConnection con;
             try {
-                con = url.openConnection();
-                inputStream = con.getInputStream();
-            } catch (SSLHandshakeException e) {
+                URL url = new URL(getProfileUrl);
+                Authenticator.setDefault(new Authenticator() {
 
-                // Create a trust manager that does not validate certificate chains
-                TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() {
-                        return null;
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication("admin", "driver".toCharArray());
                     }
+                });
 
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                    }
+                try {
+                    con = url.openConnection();
+                    inputStream = con.getInputStream();
+                } catch (SSLHandshakeException e) {
 
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                    }
-                }};
+                    // Create a trust manager that does not validate certificate chains
+                    TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
+                        public X509Certificate[] getAcceptedIssuers() {
+                            return null;
+                        }
 
-                // Install the all-trusting trust manager
-                SSLContext sc = SSLContext.getInstance("SSL");
-                sc.init(null, trustAllCerts, new SecureRandom());
-                HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-                con = url.openConnection();
-                inputStream = con.getInputStream();
+                        public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                        }
+
+                        public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                        }
+                    }};
+
+                    // Install the all-trusting trust manager
+                    SSLContext sc = SSLContext.getInstance("SSL");
+                    sc.init(null, trustAllCerts, new SecureRandom());
+                    HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+                    con = url.openConnection();
+                    inputStream = con.getInputStream();
+                }
+
+                DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+                XPath xpath = XPathFactory.newInstance().newXPath();
+
+                Document doc = dbf.newDocumentBuilder().parse(inputStream);
+                String value = (String) xpath.evaluate("//RESOURCE_PROFILE/BODY/CONFIGURATION/SERVICE_PROPERTIES/PROPERTY[@key=\"mdformat\"]/@value", doc, XPathConstants.STRING);
+
+                if (value != null && !value.isEmpty())
+                    defaultCollection = value.toUpperCase() + "-index-openaire";
+
+                log.debug("Updating defaultCollection to '" + defaultCollection + "'");
+            } catch (IOException e) {
+
+                log.error("Error applying SSLContext - IOException", e);
+            } catch (NoSuchAlgorithmException e) {
+
+                log.error("Error applying SSLContext - NoSuchAlgorithmException", e);
+            } catch (KeyManagementException e) {
+
+                log.error("Error applying SSLContext - KeyManagementException", e);
+            } catch (SAXException e) {
+
+                log.error("Error parsing value - SAXException", e);
+            } catch (XPathExpressionException e) {
+
+                log.error("Error parsing value - XPathExpressionException", e);
+            } catch (ParserConfigurationException e) {
+
+                log.error("Error parsing value - ParserConfigurationException", e);
             }
-
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            XPath xpath = XPathFactory.newInstance().newXPath();
-
-            Document doc = dbf.newDocumentBuilder().parse(inputStream);
-            String value = (String) xpath.evaluate("//RESOURCE_PROFILE/BODY/CONFIGURATION/SERVICE_PROPERTIES/PROPERTY[@key=\"mdformat\"]/@value", doc, XPathConstants.STRING);
-
-            if (value != null && !value.isEmpty())
-                defaultCollection = value.toUpperCase() + "-index-openaire";
-
-            log.debug("Updating defaultCollection to '" + defaultCollection + "'");
-        } catch (IOException e) {
-
-            log.error("Error applying SSLContext - IOException", e);
-        } catch (NoSuchAlgorithmException e) {
-
-            log.error("Error applying SSLContext - NoSuchAlgorithmException", e);
-        } catch (KeyManagementException e) {
-
-            log.error("Error applying SSLContext - KeyManagementException", e);
-        } catch (SAXException e) {
-
-            log.error("Error parsing value - SAXException", e);
-        } catch (XPathExpressionException e) {
-
-            log.error("Error parsing value - XPathExpressionException", e);
-        } catch (ParserConfigurationException e) {
-
-            log.error("Error parsing value - ParserConfigurationException", e);
         }
     }
 
@@ -621,13 +616,5 @@ public class OpenAireContentConnector implements ContentConnector {
 
     public void setSchemaAddress(String schemaAddress) {
         this.schemaAddress = schemaAddress;
-    }
-
-    public String getDefaultCollection() {
-        return defaultCollection;
-    }
-
-    public void setDefaultCollection(String defaultCollection) {
-        this.defaultCollection = defaultCollection;
     }
 }

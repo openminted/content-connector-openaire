@@ -22,6 +22,9 @@ import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.List;
 
+/**
+ * Class for converting an OpenAIRE publication xml into an OMTD documentMetadataRecord class and convert it to string xml
+ */
 public class PublicationResultHandler extends DefaultHandler {
     private static Logger log = Logger.getLogger(PublicationResultHandler.class.getName());
 
