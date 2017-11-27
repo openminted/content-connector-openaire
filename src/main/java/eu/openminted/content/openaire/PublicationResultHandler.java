@@ -39,7 +39,6 @@ public class PublicationResultHandler extends DefaultHandler {
     private Title title;
     private PersonInfo author;
     private DocumentDistributionInfo documentDistributionInfo;
-    private DistributionLoc distributionLoc;
     private RightsInfo rightsInfo;
     private JournalInfo relatedJournal;
     private DataFormatInfo dataFormatInfo;
@@ -203,7 +202,7 @@ public class PublicationResultHandler extends DefaultHandler {
         else if (qName.equalsIgnoreCase("language")) {
             value = "";
             String classid = attributes.getValue("classid");
-            Language language = languageTypeConverter.convertCodeToLanguage(classid);
+            String language = languageTypeConverter.convertCodeToLanguage(classid);
             publication.getDocumentLanguages().add(language);
         }
         /*
@@ -212,10 +211,8 @@ public class PublicationResultHandler extends DefaultHandler {
         else if (qName.equalsIgnoreCase("webresource")) {
             value = "";
             documentDistributionInfo = new DocumentDistributionInfo();
-            distributionLoc = new DistributionLoc();
         } else if (qName.equalsIgnoreCase("url")) {
             documentDistributionInfo = new DocumentDistributionInfo();
-            distributionLoc = new DistributionLoc();
             value = "";
         }
         /*
@@ -248,16 +245,12 @@ public class PublicationResultHandler extends DefaultHandler {
         else if (qName.equalsIgnoreCase("bestlicense")) {
             String classid = attributes.getValue("classid");
             String classname = attributes.getValue("classname");
-            LicenceInfos licenceInfos = new LicenceInfos();
+
             LicenceInfo licenceInfo = new LicenceInfo();
             licenceInfo.setLicence(LicenceEnum.NON_STANDARD_LICENCE_TERMS);
             licenceInfo.setNonStandardLicenceTermsURL("http://api.openaire.eu/vocabularies/dnet:access_modes#" + classid);
-            licenceInfos.getLicenceInfo().add(licenceInfo);
-
-            List<RightsStatementEnum> rightsStatementEnumList = new ArrayList<>();
-            rightsStatementEnumList.add(rightsStmtNameConverter.convertToOMTD(classname));
-            rightsInfo.setRightsStatement(rightsStatementEnumList);
-            rightsInfo.getLicenceInfos().add(licenceInfos);
+            rightsInfo.setRightsStatement(rightsStmtNameConverter.convertToOMTD(classname));
+            rightsInfo.getLicenceInfos().add(licenceInfo);
         }
         /*
             Journal
@@ -424,13 +417,19 @@ public class PublicationResultHandler extends DefaultHandler {
             End of fullname
          */
             else if (qName.equalsIgnoreCase("fullname")) {
-                Name personName = new Name();
-                personName.setValue(value);
+
                 if (author == null) {
                     author = new PersonInfo();
                 }
 
-                author.getNames().add(personName);
+                String[] fullname = value.split(",");
+
+                if (fullname.length == 2) {
+                    author.setSurname(fullname[0].trim());
+                    author.setGivenName(fullname[1].trim());
+                } else {
+                    author.setSurname(value);
+                }
                 value = "";
             }
         /*
@@ -505,16 +504,7 @@ public class PublicationResultHandler extends DefaultHandler {
          */
             else if (qName.equalsIgnoreCase("url")) {
                 if (!value.trim().isEmpty()) {
-                    //todo: check whether this 'if' check is useful or not
-                    if (hasIndexInfo) {
-                        distributionLoc.setDistributionMedium(DistributionMediumEnum.DOWNLOADABLE);
-                        distributionLoc.setDistributionLocation(value);
-                    } else {
-                        distributionLoc.setDistributionMedium(DistributionMediumEnum.DOWNLOADABLE);
-                        distributionLoc.setDistributionLocation(value);
-                    }
-
-                    documentDistributionInfo.setDistributionLoc(distributionLoc);
+                    documentDistributionInfo.setDistributionLocation(value);
                     value = "";
                 }
             }
@@ -523,7 +513,8 @@ public class PublicationResultHandler extends DefaultHandler {
             End of webresource element
          */
             else if (qName.equalsIgnoreCase("webresource")) {
-                documentDistributionInfo.setRightsInfo(rightsInfo);
+                publication.setRightsInfo(rightsInfo);
+
                 publication.getDistributions().add(documentDistributionInfo);
             }
         /*
@@ -613,33 +604,33 @@ public class PublicationResultHandler extends DefaultHandler {
                 }
             } else if (qName.equalsIgnoreCase("mimetype")) {
                 if (hasIndexInfo) {
-                    MimeTypeEnum mimeType;
+                    DataFormatType mimeType;
                     try {
-                        mimeType = MimeTypeEnum.fromValue(value);
+                        mimeType = DataFormatType.fromValue(value);
                     } catch (IllegalArgumentException e) {
                         mimeType = null;
                     }
 
-                    if (dataFormatInfo.getMimeType() == null && mimeType != null)
-                        dataFormatInfo.setMimeType(mimeType);
+                    if (dataFormatInfo.getDataFormat() == null && mimeType != null)
+                        dataFormatInfo.setDataFormat(mimeType);
                 }
             } else if (qName.equalsIgnoreCase("format")) {
                 if (hasIndexInfo) {
-                    MimeTypeEnum mimeType;
+                    DataFormatType mimeType;
                     try {
-                        mimeType = MimeTypeEnum.fromValue(value);
+                        mimeType = DataFormatType.fromValue(value);
 
                     } catch (IllegalArgumentException e) {
                         mimeType = null;
                     }
 
-                    if (dataFormatInfo.getMimeType() != null) {
-                        if (mimeType != null && mimeType != dataFormatInfo.getMimeType()) {
-                            dataFormatInfo.setMimeType(mimeType);
+                    if (dataFormatInfo.getDataFormat() != null) {
+                        if (mimeType != null && mimeType != dataFormatInfo.getDataFormat()) {
+                            dataFormatInfo.setDataFormat(mimeType);
                         }
                     } else {
                         if (mimeType != null)
-                            dataFormatInfo.setMimeType(mimeType);
+                            dataFormatInfo.setDataFormat(mimeType);
                     }
                 }
             }

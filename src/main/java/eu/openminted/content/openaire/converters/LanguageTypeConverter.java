@@ -1,14 +1,11 @@
 package eu.openminted.content.openaire.converters;
 
 import eu.openminted.content.connector.utils.language.LanguageUtils;
-import eu.openminted.registry.domain.Language;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class LanguageTypeConverter {
@@ -27,8 +24,8 @@ public class LanguageTypeConverter {
      * @param languageCode the code to find the corresponding language name
      * @return Language element with Id (code) and Tag (name)
      */
-    public Language convertCodeToLanguage(String languageCode) {
-        Language language;
+    public String convertCodeToLanguage(String languageCode) {
+        String language;
         String code = null;
 
         String[] codings = languageCode.split("/");
@@ -36,8 +33,7 @@ public class LanguageTypeConverter {
 
         language = getLanguageAndCode(code);
 
-        if ((language == null
-                || language.getLanguageTag() == null)
+        if ((language == null)
                 && codings.length > 1) {
             code = codings[1].replaceAll("\\'", "");
             language = getLanguageAndCode(code);
@@ -56,40 +52,27 @@ public class LanguageTypeConverter {
      * @param code the code to find the corresponding language name
      * @return Language element with Id (code) and Tag (name)
      */
-    private Language getLanguageAndCode(String code) {
-        Language language = null;
+    private String getLanguageAndCode(String code) {
+        String language = null;
         if (languageUtils.getLangCodeToName().containsKey(code)) {
-            language = new Language();
 
-            language.setLanguageId(code);
-            language.setLanguageTag(languageUtils.getLangCodeToName().get(code));
-
+            language = code;
         } else if (languageUtils.getConvert639_2Bto639_1().containsKey(code)) {
-            language = new Language();
 
             code = languageUtils.getConvert639_2Bto639_1().get(code);
-            language.setLanguageId(code);
-            language.setLanguageTag(languageUtils.getLangCodeToName().get(code));
-
+            language = code;
         } else if (languageUtils.getConvert639_2Tto639_1().containsKey(code)) {
-            language = new Language();
 
             code = languageUtils.getConvert639_2Tto639_1().get(code);
-            language.setLanguageId(code);
-            language.setLanguageTag(languageUtils.getLangCodeToName().get(code));
-
+            language = code;
         } else if (languageUtils.getConvert639_3to639_1().containsKey(code)) {
-            language = new Language();
 
             code = languageUtils.getConvert639_3to639_1().get(code);
-            language.setLanguageId(code);
-            language.setLanguageTag(languageUtils.getLangCodeToName().get(code));
+            language = code;
         } else if (languageUtils.getAdditionalCodes().containsKey(code)) {
-            language = new Language();
 
             code = languageUtils.getAdditionalCodes().get(code);
-            language.setLanguageId(code);
-            language.setLanguageTag(languageUtils.getLangCodeToName().get(code));
+            language = code;
         }
         return language;
     }

@@ -13,7 +13,6 @@ import eu.openminted.content.openaire.converters.RightsStmtNameConverter;
 import eu.openminted.registry.core.domain.Facet;
 import eu.openminted.registry.core.domain.Value;
 import eu.openminted.registry.domain.DocumentTypeEnum;
-import eu.openminted.registry.domain.Language;
 import eu.openminted.registry.domain.PublicationTypeEnum;
 import eu.openminted.registry.domain.RightsStatementEnum;
 import org.apache.log4j.Logger;
@@ -366,11 +365,10 @@ public class OpenAireContentConnector implements ContentConnector {
                     }
                 } else if (field.equalsIgnoreCase(OMTDFacetEnum.DOCUMENT_LANG.value())) {
 
-                    Language language = languageTypeConverter.convertCodeToLanguage(count.getName());
+                    String language = languageTypeConverter.convertCodeToLanguage(count.getName());
 
                     if (language != null) {
-                        value.setValue(language.getLanguageId());
-                        value.setLabel(language.getLanguageTag());
+                        value.setValue(language);
                     }
                 } else if (field.equalsIgnoreCase(OMTDFacetEnum.PUBLICATION_YEAR.value())) {
                     value.setValue(count.getName().substring(0, 4));
