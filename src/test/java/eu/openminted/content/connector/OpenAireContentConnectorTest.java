@@ -3,6 +3,7 @@ package eu.openminted.content.connector;
 import eu.openminted.content.ConnectorConfiguration;
 import eu.openminted.registry.core.domain.Facet;
 import eu.openminted.registry.core.domain.Value;
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -21,9 +22,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathFactory;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.net.URL;
@@ -104,8 +103,8 @@ public class OpenAireContentConnectorTest {
 
     @Test
     @Ignore
-    public void searchPublicationYear() throws InterruptedException {
-        String[] years = {"2010" ,"2009", "2008"};
+    public void searchPublicationYear() {
+        String[] years = {"2010", "2009", "2008"};
         query.getParams().put("publicationyear", new ArrayList<>());
         query.getFacets().add("publicationyear");
 
@@ -121,7 +120,7 @@ public class OpenAireContentConnectorTest {
         Facet facet = searchResult.getFacets().get(0);
 
         int totalResults = 0;
-        for (int i=0; i < years.length; i++) {
+        for (int i = 0; i < years.length; i++) {
             assert facet.getValues().get(i) != null;
             Value value = facet.getValues().get(i);
 
@@ -392,20 +391,18 @@ public class OpenAireContentConnectorTest {
     @Test
     @Ignore
     public void downloadFullText() throws Exception {
-        String line;
-        InputStream inputStream = contentConnector.downloadFullText("od_______307::2ac66b99e43f23785fd1ae6011ead1f6");
-//        InputStream inputStream = contentConnector.downloadFullText("core_ac_uk__::0114f25b46c4b6d69f6067e82c285d1a");
+
+//        InputStream inputStream = contentConnector.downloadFullText("od_______307::2ac66b99e43f23785fd1ae6011ead1f6");
+        InputStream inputStream = contentConnector.downloadFullText("core_ac_uk__::0114f25b46c4b6d69f6067e82c285d1a");
 //        InputStream inputStream = contentConnector.downloadFullText("jairo_______::c18df4def4d30069e9557d686023675e");
 //        InputStream inputStream = contentConnector.downloadFullText("od_______165::00000090f0a93f19f8fb17252976f1fb");
-        if (inputStream != null) {
-            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-            while ((line = br.readLine()) != null) {
-                System.out.println(line);
-            }
-            br.close();
-        } else {
-            System.out.println("Publication doesn't contain a valid document");
-        }
+
+        assert inputStream != null;
+
+        FileOutputStream fileOutputStream = new FileOutputStream(new File("downloaded.pdf"));
+        IOUtils.copy(inputStream, fileOutputStream);
+        fileOutputStream.close();
+        inputStream.close();
     }
 
     @Test
