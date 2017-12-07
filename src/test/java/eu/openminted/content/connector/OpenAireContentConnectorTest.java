@@ -5,6 +5,7 @@ import eu.openminted.registry.core.domain.Facet;
 import eu.openminted.registry.core.domain.Value;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -32,6 +33,10 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {ConnectorConfiguration.class})
 public class OpenAireContentConnectorTest {
@@ -46,7 +51,7 @@ public class OpenAireContentConnectorTest {
     @org.springframework.beans.factory.annotation.Value("${content.limit}")
     private String contentLimit;
 
-    Query query;
+    private Query query;
 
     @Before
     public void initialize() {
@@ -68,7 +73,7 @@ public class OpenAireContentConnectorTest {
 
     @Test
     @Ignore
-    public void searchFacets() throws Exception {
+    public void searchFacets() {
         query.getFacets().add("rightsstmtname");
         query.getFacets().add("documentlanguage");
         query.getFacets().add("documenttype");
@@ -79,12 +84,13 @@ public class OpenAireContentConnectorTest {
 
         // Assert that result is not null and also that the resulting facets are not null
         // and the resulting publication exists and it is equal to the required number
-        assert searchResult != null;
-        assert searchResult.getFacets() != null;
-        assert searchResult.getPublications() != null && searchResult.getPublications().size() == query.getTo();
+        assertNotEquals(null, searchResult);
+        assertNotEquals(null, searchResult.getFacets());
+        assertNotEquals(null, searchResult.getPublications());
+        assertEquals(query.getTo(), searchResult.getPublications().size());
 
         // Assert that the number of facets returned is equal to the number of facets required
-        assert searchResult.getFacets().size() == query.getFacets().size();
+        assertEquals(query.getFacets().size(), searchResult.getFacets().size());
 
         int totalResults = 0;
         for (Facet facet : searchResult.getFacets()) {
@@ -95,7 +101,10 @@ public class OpenAireContentConnectorTest {
             }
 
             System.out.println("For facet " + facet.getField() + " totalResults: " + totalResults + " of " + searchResult.getTotalHits());
-            assert totalResults == searchResult.getTotalHits();
+            assertEquals(totalResults, searchResult.getTotalHits());
+
+//            for (String pub : searchResult.getPublications())
+//                System.out.println(pub);
 
             totalResults = 0;
         }
@@ -112,10 +121,11 @@ public class OpenAireContentConnectorTest {
             query.getParams().get("publicationyear").add(year);
 
         SearchResult searchResult = contentConnector.search(query);
-        assert searchResult != null;
-        assert searchResult.getFacets() != null;
-        assert searchResult.getFacets().size() == query.getFacets().size();
-        assert searchResult.getFacets().get(0).getField().equalsIgnoreCase("publicationyear");
+        assertNotEquals(null, searchResult);
+        assertNotEquals(null, searchResult.getFacets());
+        assertNotEquals(null, searchResult.getPublications());
+        assertEquals(searchResult.getFacets().size(), query.getFacets().size());
+        assertTrue(searchResult.getFacets().get(0).getField().equalsIgnoreCase("publicationyear"));
 
         Facet facet = searchResult.getFacets().get(0);
 
@@ -197,7 +207,9 @@ public class OpenAireContentConnectorTest {
     @Ignore
     public void fetchMetadata() throws Exception {
         query.getParams().put("documentlanguage", new ArrayList<>());
+        query.getParams().put("documentyear", new ArrayList<>());
         query.getParams().get("documentlanguage").add("grc");
+        query.getParams().get("documentyear").add("1532");
 
         query.setKeyword("*:*");
         query.setFrom(0);

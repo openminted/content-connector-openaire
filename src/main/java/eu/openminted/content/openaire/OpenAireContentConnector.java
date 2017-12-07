@@ -6,6 +6,7 @@ import eu.openminted.content.connector.SearchResult;
 import eu.openminted.content.connector.utils.SearchExtensions;
 import eu.openminted.content.connector.utils.faceting.OMTDFacetEnum;
 import eu.openminted.content.connector.utils.faceting.OMTDFacetLabels;
+import eu.openminted.content.connector.utils.language.LanguageUtils;
 import eu.openminted.content.openaire.converters.DocumentTypeConverter;
 import eu.openminted.content.openaire.converters.LanguageTypeConverter;
 import eu.openminted.content.openaire.converters.PublicationTypeConverter;
@@ -51,7 +52,6 @@ import java.util.Map;
 @Component
 public class OpenAireContentConnector implements ContentConnector {
     private static Logger log = Logger.getLogger(OpenAireContentConnector.class.getName());
-    private String schemaAddress;
 
     @org.springframework.beans.factory.annotation.Value("${services.openaire.getProfile}")
     private String getProfileUrl;
@@ -134,7 +134,7 @@ public class OpenAireContentConnector implements ContentConnector {
                     // TODO: xml validation for the initial queries is needed and yet the oaf xsd has issues
                     // leaving xml validation for as feature in future commit
 
-                    String xml = document.getFieldValue(queryOutputField).toString().replaceAll("\\[|\\]", "");
+                    String xml = document.getFieldValue(queryOutputField).toString().replaceAll("[\\[\\]]", "");
                     xml = xml.trim();
                     parser.parse(new InputSource(new StringReader(xml)));
                     searchResult.getPublications().add(parser.getOMTDPublication());
@@ -339,6 +339,8 @@ public class OpenAireContentConnector implements ContentConnector {
             OMTDFacetEnum facetEnum = OMTDFacetEnum.fromValue(field);
             facet.setLabel(omtdFacetLabels.getFacetLabelsFromEnum(facetEnum));
             List<Value> values = new ArrayList<>();
+            LanguageUtils languageUtils = new LanguageUtils();
+
             for (FacetField.Count count : facetField.getValues()) {
                 Value value = new Value();
 
@@ -369,6 +371,7 @@ public class OpenAireContentConnector implements ContentConnector {
 
                     if (language != null) {
                         value.setValue(language);
+                        value.setLabel(languageUtils.getLangCodeToName().get(value.getValue()));
                     }
                 } else if (field.equalsIgnoreCase(OMTDFacetEnum.PUBLICATION_YEAR.value())) {
                     value.setValue(count.getName().substring(0, 4));
@@ -532,7 +535,8 @@ public class OpenAireContentConnector implements ContentConnector {
     }
 
     /**
-     * Updates defaultConnection by querying services.openaire.eu profile
+     * Updates defaultConnection by querying services.openaire.eu profile <br>
+     * This is used when querying the OpenAIRE solr in order to set the proper name of default connection
      */
     @Scheduled(fixedRate = (long)10 * 60 * 1000, initialDelay = 0)
     private void updateDefaultConnection() {
@@ -606,13 +610,5 @@ public class OpenAireContentConnector implements ContentConnector {
                 log.error("Error parsing value - ParserConfigurationException", e);
             }
         }
-    }
-
-    public String getSchemaAddress() {
-        return schemaAddress;
-    }
-
-    public void setSchemaAddress(String schemaAddress) {
-        this.schemaAddress = schemaAddress;
     }
 }

@@ -17,6 +17,11 @@ public class OpenAireStreamingResponseCallback extends StreamingResponseCallback
     private PipedOutputStream outputStream;
     private String outputField;
 
+    /**
+     * Default constructor of the OpenAireStreamingResponseCallback
+     * @param out the PipedOutputStream stream
+     * @param field the name of the field that is retrieved as metadata from the fields of the Solr results
+     */
     OpenAireStreamingResponseCallback(PipedOutputStream out, String field) {
         outputStream = out;
         outputField = field;
@@ -24,14 +29,14 @@ public class OpenAireStreamingResponseCallback extends StreamingResponseCallback
 
     /**
      * Override method to write to the PipedOutputStream object a parsed SolrDocument as OMTD Publication
-     * @param solrDocument
+     * @param solrDocument The SolrDocument to parse
      */
     @Override
     public void streamSolrDocument(SolrDocument solrDocument) {
         try {
             Parser parser = new Parser();
             String xml = solrDocument.getFieldValue(outputField).toString()
-                    .replaceAll("\\[|\\]", "");
+                    .replaceAll("[\\[\\]]", "");
             parser.parse(new InputSource(new StringReader(xml)));
             outputStream.write(parser.getOMTDPublication().getBytes());
             outputStream.flush();

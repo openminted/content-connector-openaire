@@ -39,12 +39,25 @@ public class OpenAireSolrClient implements AutoCloseable {
     private OpenAireSolrClient() {
     }
 
+    /**
+     * Constructor that will provide type, name of hosts and the default collection
+     * @param type the type of the Solr client. That is either 'cloud' or 'http' in order to build the inner SolrClient
+     * @param hosts the host address of the Solr provider
+     * @param defaultCollection the name of the Solr default collection
+     */
     public OpenAireSolrClient(String type, String hosts, String defaultCollection) {
         this.type = type;
         this.hosts = hosts;
         this.defaultCollection = defaultCollection;
     }
 
+    /**
+     * Constructor that will provide type, name of hosts, the default collection and a limit for results
+     * @param type the type of the Solr client. That is either 'cloud' or 'http' in order to build the inner SolrClient
+     * @param hosts the host address of the Solr provider
+     * @param defaultCollection the name of the Solr default collection
+     * @param limit the number of max metadata to retrieve
+     */
     public OpenAireSolrClient(String type, String hosts, String defaultCollection, int limit) {
         this.type = type;
         this.hosts = hosts;
