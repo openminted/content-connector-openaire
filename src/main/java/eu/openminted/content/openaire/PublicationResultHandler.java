@@ -18,9 +18,7 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import java.io.StringWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.GregorianCalendar;
-import java.util.List;
 
 /**
  * Class for converting an OpenAIRE publication xml into an OMTD documentMetadataRecord class and convert it to string xml
@@ -61,21 +59,6 @@ public class PublicationResultHandler extends DefaultHandler {
         jaxbMarshaller = jaxbContext.createMarshaller();
         jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
         jaxbMarshaller.setProperty("jaxb.fragment", true);
-
-        rightsStmtNameConverter = new RightsStmtNameConverter();
-        publicationTypeConverter = new PublicationTypeConverter();
-        languageTypeConverter = new LanguageTypeConverter();
-        documentMetadataRecord = new DocumentMetadataRecord();
-        Document document = new Document();
-        publication = new DocumentInfo();
-        document.setPublication(publication);
-        metadataIdentifier = new MetadataIdentifier();
-        metadataHeaderInfo = new MetadataHeaderInfo();
-        metadataHeaderInfo.setMetadataRecordIdentifier(metadataIdentifier);
-        documentMetadataRecord.setMetadataHeaderInfo(metadataHeaderInfo);
-        documentMetadataRecord.setDocument(document);
-        rightsInfo = new RightsInfo();
-        relatedJournal = new JournalInfo();
     }
 
     @Override
@@ -85,6 +68,24 @@ public class PublicationResultHandler extends DefaultHandler {
             DocumentMetadataRecord
          */
         if (qName.equalsIgnoreCase("result")) {
+
+            publication = new DocumentInfo();
+            metadataIdentifier = new MetadataIdentifier();
+            metadataHeaderInfo = new MetadataHeaderInfo();
+            rightsStmtNameConverter = new RightsStmtNameConverter();
+            publicationTypeConverter = new PublicationTypeConverter();
+            languageTypeConverter = new LanguageTypeConverter();
+            documentMetadataRecord = new DocumentMetadataRecord();
+            rightsInfo = new RightsInfo();
+            relatedJournal = new JournalInfo();
+
+            Document document = new Document();
+            document.setPublication(publication);
+
+            metadataHeaderInfo.setMetadataRecordIdentifier(metadataIdentifier);
+            documentMetadataRecord.setMetadataHeaderInfo(metadataHeaderInfo);
+            documentMetadataRecord.setDocument(document);
+
             /*
                 Set by default the document type to abstract until we find a solution to this
              */
@@ -204,15 +205,9 @@ public class PublicationResultHandler extends DefaultHandler {
             String classid = attributes.getValue("classid");
             String language = languageTypeConverter.convertCodeToLanguage(classid);
             publication.getDocumentLanguages().add(language);
-        }
-        /*
-            DocumentDistributionInfo (preparation for accessing the downloading URL)
-         */
-        else if (qName.equalsIgnoreCase("webresource")) {
+        } else if (qName.equalsIgnoreCase("webresource")) {
             value = "";
-            documentDistributionInfo = new DocumentDistributionInfo();
         } else if (qName.equalsIgnoreCase("url")) {
-            documentDistributionInfo = new DocumentDistributionInfo();
             value = "";
         }
         /*
@@ -251,6 +246,7 @@ public class PublicationResultHandler extends DefaultHandler {
             licenceInfo.setNonStandardLicenceTermsURL("http://api.openaire.eu/vocabularies/dnet:access_modes#" + classid);
             rightsInfo.setRightsStatement(rightsStmtNameConverter.convertToOMTD(classname));
             rightsInfo.getLicenceInfos().add(licenceInfo);
+            publication.setRightsInfo(rightsInfo);
         }
         /*
             Journal
@@ -289,8 +285,11 @@ public class PublicationResultHandler extends DefaultHandler {
         }
         /*
             indexinfo
+
+            DocumentDistributionInfo (preparation for accessing the downloading URL)
          */
         else if (qName.equalsIgnoreCase("indexinfo")) {
+            documentDistributionInfo = new DocumentDistributionInfo();
             documentMetadataRecord.getDocument().getPublication().setDocumentType(DocumentTypeEnum.WITH_FULL_TEXT);
             dataFormatInfo = new DataFormatInfo();
             value = "";
@@ -504,7 +503,8 @@ public class PublicationResultHandler extends DefaultHandler {
          */
             else if (qName.equalsIgnoreCase("url")) {
                 if (!value.trim().isEmpty()) {
-                    documentDistributionInfo.setDistributionLocation(value);
+                    if (hasIndexInfo)
+                        documentDistributionInfo.setDistributionLocation(value);
                     value = "";
                 }
             }
@@ -513,9 +513,8 @@ public class PublicationResultHandler extends DefaultHandler {
             End of webresource element
          */
             else if (qName.equalsIgnoreCase("webresource")) {
-                publication.setRightsInfo(rightsInfo);
 
-                publication.getDistributions().add(documentDistributionInfo);
+//                publication.getDistributions().add(documentDistributionInfo);
             }
         /*
             Subjects and Keywords
@@ -597,42 +596,57 @@ public class PublicationResultHandler extends DefaultHandler {
          */
             else if (qName.equalsIgnoreCase("indexinfo")) {
                 hasIndexInfo = false;
-                documentDistributionInfo.setDataFormatInfo(dataFormatInfo);
+                value = "";
+                publication.getDistributions().add(documentDistributionInfo);
+
             } else if (qName.equalsIgnoreCase("hashkey")) {
                 if (hasIndexInfo) {
                     documentDistributionInfo.setHashkey(value);
                 }
+                value = "";
             } else if (qName.equalsIgnoreCase("mimetype")) {
                 if (hasIndexInfo) {
                     DataFormatType mimeType;
                     try {
+                        // in order to be compliant with the DataFormatType
+                        if (value.equalsIgnoreCase("xml"))
+                            value = "application/xml";
                         mimeType = DataFormatType.fromValue(value);
                     } catch (IllegalArgumentException e) {
                         mimeType = null;
                     }
 
-                    if (dataFormatInfo.getDataFormat() == null && mimeType != null)
-                        dataFormatInfo.setDataFormat(mimeType);
+                    dataFormatInfo.setDataFormat(mimeType);
+                    documentDistributionInfo.setDataFormatInfo(dataFormatInfo);
+                    value = "";
                 }
-            } else if (qName.equalsIgnoreCase("format")) {
-                if (hasIndexInfo) {
-                    DataFormatType mimeType;
-                    try {
-                        mimeType = DataFormatType.fromValue(value);
+            }
+            else if (qName.equalsIgnoreCase("format")) {
+                // selecting mimetype has been moved into the mimetype element.
+                // the code bellow belongs to earlier version document that could
+                // get information for the mimetype by the relevant element
 
-                    } catch (IllegalArgumentException e) {
-                        mimeType = null;
-                    }
-
-                    if (dataFormatInfo.getDataFormat() != null) {
-                        if (mimeType != null && mimeType != dataFormatInfo.getDataFormat()) {
-                            dataFormatInfo.setDataFormat(mimeType);
-                        }
-                    } else {
-                        if (mimeType != null)
-                            dataFormatInfo.setDataFormat(mimeType);
-                    }
-                }
+//                if (hasIndexInfo) {
+//                    DataFormatType mimeType;
+//                    try {
+//                        if (value.equalsIgnoreCase("xml"))
+//                            value = "application/xml";
+//                        mimeType = DataFormatType.fromValue(value);
+//
+//                    } catch (IllegalArgumentException e) {
+//                        mimeType = null;
+//                    }
+//
+//                    if (dataFormatInfo.getDataFormat() == null)
+//                        dataFormatInfo.setDataFormat(mimeType);
+//                    else if (dataFormatInfo.getDataFormat() != null
+//                            && mimeType != null
+//                            && mimeType != dataFormatInfo.getDataFormat()) {
+//                        dataFormatInfo.setDataFormat(mimeType);
+//                    }
+//
+//                    documentDistributionInfo.setDataFormatInfo(dataFormatInfo);
+//                }
             }
         } catch (Exception e) {
             log.error("Something went wrong", e);

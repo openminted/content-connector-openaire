@@ -150,10 +150,12 @@ public class OpenAireContentConnectorTest {
     public void searchMultipleParameters() {
         query.getParams().put("publicationyear", new ArrayList<>());
         query.getParams().put("documentlanguage", new ArrayList<>());
+        query.getParams().put("documenttype", new ArrayList<>());
         query.getParams().put("publicationtype", new ArrayList<>());
 
         query.getParams().get("publicationyear").add("2010");
-        query.getParams().get("documentlanguage").add("en");
+        query.getParams().get("documentlanguage").add("ru");
+        query.getParams().get("documenttype").add("fulltext");
         query.getParams().get("publicationtype").add("research");
 
         query.getFacets().add("rightsstmtname");
@@ -162,7 +164,7 @@ public class OpenAireContentConnectorTest {
         query.getFacets().add("publicationtype");
         query.getFacets().add("publicationyear");
 
-        query.setKeyword("digital");
+        query.setKeyword("*:*");
         SearchResult searchResult = contentConnector.search(query);
 
         if (searchResult.getPublications() != null) {
