@@ -70,7 +70,7 @@ public class OpenAireSolrClient implements AutoCloseable {
      * @param query the query as inserted in Content-OpenAireContentConnector-Service
      * @return QueryResponse with metadata and facets
      */
-    public QueryResponse query(Query query) {
+    public QueryResponse query(Query query) throws IOException {
 
         QueryResponse queryResponse = new QueryResponse();
         SolrQuery solrQuery = queryBuilder(query);
@@ -79,7 +79,7 @@ public class OpenAireSolrClient implements AutoCloseable {
             if (defaultCollection != null && !defaultCollection.isEmpty()) {
                 queryResponse = solrClient.query(defaultCollection, solrQuery);
             }
-        } catch (SolrServerException | IOException e) {
+        } catch (SolrServerException e) {
             log.error(e);
         }
         return queryResponse;

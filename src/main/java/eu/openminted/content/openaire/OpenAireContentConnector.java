@@ -28,6 +28,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.net.ssl.*;
+import javax.xml.bind.JAXBException;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
@@ -102,7 +103,7 @@ public class OpenAireContentConnector implements ContentConnector {
      * @return SearchResult with metadata and facets
      */
     @Override
-    public SearchResult search(Query query) {
+    public SearchResult search(Query query) throws IOException {
 
         Query tmpQuery = new Query(query.getKeyword(), query.getParams(), query.getFacets(), query.getFrom(), query.getTo());
         if (tmpQuery.getKeyword() == null || tmpQuery.getKeyword().isEmpty()) {
@@ -110,7 +111,8 @@ public class OpenAireContentConnector implements ContentConnector {
         }
 
         SearchResult searchResult = new SearchResult();
-        try (OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection)) {
+        try {
+            OpenAireSolrClient openAireSolrClient = new OpenAireSolrClient(solrClientType, hosts, defaultCollection);
 
             Parser parser = new Parser();
             buildParams(tmpQuery);
@@ -181,9 +183,17 @@ public class OpenAireContentConnector implements ContentConnector {
             }
 
             searchResult.setFacets(new ArrayList<>(facets.values()));
-        } catch (Exception e) {
-            log.error("OpenAireContentConnector.search", e);
+        } catch (SAXException e) {
+            log.error("OpenAireContentConnector.search SAXException", e);
+            e.printStackTrace();
+        } catch (JAXBException e) {
+            e.printStackTrace();
+            log.error("OpenAireContentConnector.search JAXBException", e);
+        } catch (ParserConfigurationException e) {
+            log.error("OpenAireContentConnector.search ParserConfigurationException", e);
+            e.printStackTrace();
         }
+
         return searchResult;
     }
 

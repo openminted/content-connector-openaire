@@ -73,7 +73,7 @@ public class OpenAireContentConnectorTest {
 
     @Test
     @Ignore
-    public void searchFacets() {
+    public void searchFacets() throws IOException {
         query.getFacets().add("rightsstmtname");
         query.getFacets().add("documentlanguage");
         query.getFacets().add("documenttype");
@@ -112,7 +112,7 @@ public class OpenAireContentConnectorTest {
 
     @Test
     @Ignore
-    public void searchPublicationYear() {
+    public void searchPublicationYear() throws IOException {
         String[] years = {"2010", "2009", "2008"};
         query.getParams().put("publicationyear", new ArrayList<>());
         query.getFacets().add("publicationyear");
@@ -146,8 +146,8 @@ public class OpenAireContentConnectorTest {
     }
 
     @Test
-    @Ignore
-    public void searchMultipleParameters() {
+//    @Ignore
+    public void searchMultipleParameters() throws IOException {
         query.getParams().put("publicationyear", new ArrayList<>());
         query.getParams().put("documentlanguage", new ArrayList<>());
         query.getParams().put("documenttype", new ArrayList<>());
@@ -194,7 +194,7 @@ public class OpenAireContentConnectorTest {
 
     @Test
     @Ignore
-    public void searchSpecificIdentifier() {
+    public void searchSpecificIdentifier() throws IOException {
         query.getParams().put("fq", new ArrayList<>());
         query.getParams().get("fq").add("__indexrecordidentifier:od_______165\\:\\:00000090f0a93f19f8fb17252976f1fb");
 
