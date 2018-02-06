@@ -293,7 +293,7 @@ public class OpenAireContentConnector implements ContentConnector {
                     outputStream.write("</documentMetadataRecords>\n".getBytes());
                 } catch (Exception e) {
                     log.info("Fetching metadata has been interrupted. See debug for details!");
-                    log.debug("OpenAireSolrClient.fetchMetadata", e);
+                    log.info("OpenAireSolrClient.fetchMetadata", e);
                 } finally {
                     try {
                         outputStream.close();
@@ -308,7 +308,7 @@ public class OpenAireContentConnector implements ContentConnector {
             outputStream.write("<documentMetadataRecords>\n".getBytes());
         } catch (IOException e) {
             log.info("Fetching metadata has been interrupted. See debug for details!");
-            log.debug("OpenAireContentConnector.fetchMetadata", e);
+            log.info("OpenAireContentConnector.fetchMetadata", e);
             try {
                 inputStream.close();
                 outputStream.close();
