@@ -1,11 +1,10 @@
 package eu.openminted.content.connector;
 
-import eu.openminted.content.ConnectorConfiguration;
+import eu.openminted.content.openaire.ConnectorConfiguration;
 import eu.openminted.registry.core.domain.Facet;
 import eu.openminted.registry.core.domain.Value;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
