@@ -1,8 +1,8 @@
 package eu.openminted.content.openaire;
 
-import eu.openminted.content.openaire.converters.LanguageTypeConverter;
-import eu.openminted.content.openaire.converters.PublicationTypeConverter;
-import eu.openminted.content.openaire.converters.RightsStmtNameConverter;
+import eu.openminted.content.connector.utils.converters.LanguageTypeConverter;
+import eu.openminted.content.connector.utils.converters.PublicationTypeConverter;
+import eu.openminted.content.connector.utils.converters.RightsStmtNameConverter;
 import eu.openminted.registry.domain.*;
 import org.apache.log4j.Logger;
 import org.xml.sax.Attributes;
